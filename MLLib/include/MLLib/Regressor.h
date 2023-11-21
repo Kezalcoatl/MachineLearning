@@ -240,7 +240,7 @@ namespace Regressors
 			std::istream& in);
 	};
 	template <typename T>
-	size_t const Regressor<T>::MaxNumModifiers = 6ull;
+	size_t const Regressor<T>::MaxNumModifiers = 5ull;
 }
 
 #include "impl/Regressor.hpp"

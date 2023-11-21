@@ -742,8 +742,9 @@ namespace Regressors
 		}
 		else
 		{
+			using ModifierType = typename std::tuple_element<I, std::tuple<ModifierFunctionTypes...>>::type::ModifierType;
+			serialize(ModifierType::ModifierTypeEnum, out);
 			auto const& modifierFunction = std::get<I>(modifierFunctions);
-			serialize(modifierFunction.GetModifierType(), out);
 			serialize(modifierFunction, out);
 			SerializeModifiers<I + 1>(modifierFunctions, out);
 		}

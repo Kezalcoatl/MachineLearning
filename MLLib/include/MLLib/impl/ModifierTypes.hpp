@@ -11,6 +11,12 @@ namespace Regressors
 		}
 
 		template <typename T>
+		ModifierTypes NormaliserModifier<T>::OneShotTrainingParams::GetModifierType() const
+		{
+			return NormaliserModifier::ModifierTypeEnum;
+		}
+
+		template <typename T>
 		NormaliserModifier<T>::CrossValidationTrainingParams::CrossValidationTrainingParams()
 		{
 		}
@@ -73,6 +79,12 @@ namespace Regressors
 		InputPCAModifier<T>::OneShotTrainingParams::OneShotTrainingParams() : TargetVariance(0.95)
 		{
 			static_assert(std::is_floating_point<T>::value);
+		}
+
+		template <typename T>
+		ModifierTypes InputPCAModifier<T>::OneShotTrainingParams::GetModifierType() const
+		{
+			return InputPCAModifier::ModifierTypeEnum;
 		}
 
 		template <typename T>
@@ -157,6 +169,12 @@ namespace Regressors
 		FeatureSelectionModifier<T>::OneShotTrainingParams::OneShotTrainingParams() : FeatureFraction(0.5)
 		{
 			static_assert(std::is_floating_point<T>::value);
+		}
+
+		template <typename T>
+		ModifierTypes FeatureSelectionModifier<T>::OneShotTrainingParams::GetModifierType() const
+		{
+			return FeatureSelectionModifier::ModifierTypeEnum;
 		}
 
 		template <typename T>

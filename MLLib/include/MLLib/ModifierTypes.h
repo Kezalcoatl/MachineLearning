@@ -31,11 +31,8 @@ namespace Regressors
 
 			struct ModifierOneShotTrainingParamsBase
 			{
-			private:
-				ModifierTypes ModifierTypeEnum;
-
 			public:
-				virtual ModifierTypes const& GetModifierType() const { return ModifierTypeEnum; }
+				virtual ModifierTypes GetModifierType() const = 0;
 			};
 		};
 
@@ -51,6 +48,8 @@ namespace Regressors
 				typedef NormaliserModifier ModifierType;
 
 				OneShotTrainingParams();
+
+				ModifierTypes GetModifierType() const override;
 
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{
@@ -81,6 +80,8 @@ namespace Regressors
 				dlib::vector_normalizer<col_vector<T>> Normaliser;
 				OneShotTrainingParams TrainedParams;
 			public:
+				typedef NormaliserModifier ModifierType;
+
 				ModifierFunction() = default;
 				ModifierFunction(OneShotTrainingParams const& oneShotParams,
 					std::vector<col_vector<T>> const& inputExamples,
@@ -90,11 +91,6 @@ namespace Regressors
 
 				OneShotTrainingParams const& GetTrainedParams() const;
 
-				static ModifierTypes GetModifierType()
-				{
-					return NormaliserModifier::ModifierTypeEnum;
-				}
-
 				friend void serialize(ModifierFunction const& item, std::ostream& out)
 				{
 					dlib::serialize(item.Normaliser, out);
@@ -103,8 +99,8 @@ namespace Regressors
 
 				friend void deserialize(ModifierFunction& item, std::istream& in)
 				{
-					dlib::deserialize(item.normaliser, in);
-					deserialize(item.trainedParams, in);
+					dlib::deserialize(item.Normaliser, in);
+					deserialize(item.TrainedParams, in);
 				}
 			};
 
@@ -165,6 +161,8 @@ namespace Regressors
 
 				OneShotTrainingParams();
 
+				ModifierTypes GetModifierType() const override;
+
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{
 					dlib::serialize(item.TargetVariance, out);
@@ -199,17 +197,14 @@ namespace Regressors
 				PCA::PrincipalComponentAnalysis<col_vector<T>> PCAModel;
 				OneShotTrainingParams TrainedModifierParams;
 			public:
+				typedef InputPCAModifier ModifierType;
+
 				ModifierFunction() = default;
 				ModifierFunction(OneShotTrainingParams const& osTrainingParams, std::vector<col_vector<T>> const& inputExamples, std::vector<T> const& targetExamples);
 
 				void Modify(col_vector<T>& input) const;
 
 				OneShotTrainingParams const& GetTrainedParams() const;
-
-				static ModifierTypes GetModifierType()
-				{
-					return InputPCAModifier::ModifierTypeEnum;
-				}
 
 				friend void serialize(ModifierFunction const& item, std::ostream& out)
 				{
@@ -287,6 +282,8 @@ namespace Regressors
 
 				OneShotTrainingParams();
 
+				ModifierTypes GetModifierType() const override;
+
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{
 					dlib::serialize(item.FeatureFraction, out);
@@ -326,17 +323,14 @@ namespace Regressors
 					T const& featureFraction);
 
 			public:
+				typedef FeatureSelectionModifier ModifierType;
+
 				ModifierFunction() = default;
 				ModifierFunction(OneShotTrainingParams const& osParams, std::vector<col_vector<T>> const& inputExamples, std::vector<T> const& targetExamples);
 
 				void Modify(col_vector<T>& input) const;
 
 				OneShotTrainingParams const& GetTrainedParams() const;
-
-				static ModifierTypes GetModifierType()
-				{
-					return FeatureSelectionModifier::ModifierTypeEnum;
-				}
 
 				friend void serialize(ModifierFunction const& item, std::ostream& out)
 				{

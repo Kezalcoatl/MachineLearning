@@ -2,6 +2,15 @@
 #include <MLLib/Regressor.h>
 #include <dlib/md5.h>
 
+template <typename T>
+std::string GetMD5(T const& item)
+{
+	using namespace dlib;
+	std::stringstream ss;
+	serialize(item, ss);
+	return dlib::md5(ss);
+}
+
 TEST(FindMinGlobalTraining, RegressorTests) 
 {
 	using namespace Regressors;
@@ -34,31 +43,27 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	std::string const randomSeed = "MLLib";
 	CrossValidationMetric const metric = CrossValidationMetric::SumSquareMean;
 	size_t const numFolds = 4;
-	T const optimisationTolerance = 1.e-6;
-	size_t const maxNumCalls = 1000;
+	T const optimisationTolerance = 1.e-2;
+	size_t const maxNumCalls = 100;
 	size_t const numThreads = 16;
-	std::stringstream regressor;
-	std::stringstream diagnostics;
-	const std::string linearKRRRegressorMD5 = "cf2704c7eb542b7ca37b9c7579173816";
-	const std::string linearKRRDiagnosticsMD5 = "ad8bc9aa7681fdb592c2af07bdb6bf69";
-	const std::string polynomialKRRRegressorMD5 = "5b4606f5199c358d07466b3f2c36b5b7";
-	const std::string polynomialKRRDiagnosticsMD5 = "eb2164e6e471cfd109de8f43070baef4";
-	const std::string radialBasisKRRRegressorMD5 = "4c6d6c182e99249492ed28bea83b9ef6";
-	const std::string radialBasisKRRDiagnosticsMD5 = "30a273405ae37289ac2bd45f42d3b70b";
-	const std::string sigmoidKRRRegressorMD5 = "3f00294581dc4c7435109b92a7f33783";
-	const std::string sigmoidKRRDiagnosticsMD5 = "ecbfcdd7e27732ff942916f6e40c71a7";
-	const std::string linearSVRRegressorMD5 = "09596c22b1edcf0cbb6a0820c9969c11";
-	const std::string linearSVRDiagnosticsMD5 = "438e3c3c6e42451d4ff0c28a3e91a6d6";
-	const std::string polynomialSVRRegressorMD5 = "dcc330f205a61688c1b799f9ac889131";
-	const std::string polynomialSVRDiagnosticsMD5 = "b66b9405c4fe7c287b6df86e9d851aea";
-	const std::string radialBasisSVRRegressorMD5 = "31517800a1e9b03f1318d090eddcf10e";
-	const std::string radialBasisSVRDiagnosticsMD5 = "7ac0b1de843c6c54e82798b56252da6d";
-	const std::string sigmoidSVRRegressorMD5 = "c3adc56f74e5779bdd8bd8e751e91585";
+	const std::string linearKRRRegressorMD5 = "e75de35cc388bc6dc8d54442be3bf600";
+	const std::string linearKRRDiagnosticsMD5 = "44b0299083a11f13ae9ebb2034527127";
+	const std::string polynomialKRRRegressorMD5 = "7bd86356a98072bacd34ee8a16a3962e";
+	const std::string polynomialKRRDiagnosticsMD5 = "2c1782bb78e6cd2ae6e795b749f1b45d";
+	const std::string radialBasisKRRRegressorMD5 = "4e69f083c3ebabfcfb554df89b66927b";
+	const std::string radialBasisKRRDiagnosticsMD5 = "4256de6b4e83243872a4ca48faedf524";
+	const std::string sigmoidKRRRegressorMD5 = "13880ac3deab7170c247c8abd47e7b36";
+	const std::string sigmoidKRRDiagnosticsMD5 = "17cf7dcb0c32fce6ffb1fa266e4b6dca";
+	const std::string linearSVRRegressorMD5 = "e8226c57c9cee22ec608e1a2d969a3b7";
+	const std::string linearSVRDiagnosticsMD5 = "796a482b241e0e0c7b4b769311ce0abf";
+	const std::string polynomialSVRRegressorMD5 = "3c14e2b390bfa04aff2f38664d7a7025";
+	const std::string polynomialSVRDiagnosticsMD5 = "7975b99f1eb70d651c89fd5812255a72";
+	const std::string radialBasisSVRRegressorMD5 = "37c8bacf6784400a239764ad2539853b";
+	const std::string radialBasisSVRDiagnosticsMD5 = "38e727f79fbcaa911ad19d95e676fbee";
+	const std::string sigmoidSVRRegressorMD5 = "8882a652a21f80b5da487d44b7fdbdbb";
 	const std::string sigmoidSVRDiagnosticsMD5 = "b2b768bf60e7dc4bac708a549e3ec97c";
-	const std::string denseRFRegressorMD5 = "ba75775ef04625683f6d26a23ba27cfb";
+	const std::string denseRFRegressorMD5 = "fca84aeb4359bbbf0828358cff016421";
 	const std::string denseRFDiagnosticsMD5 = "70600da8e1aa29238dbde3b57921ebae";
-	std::string regressorMD5;
-	std::string diagnosticsMD5;
 
 	ModifierTypes::NormaliserModifier<T>::FindMinGlobalTrainingParams normaliserFMGParams;
 	ModifierTypes::InputPCAModifier<T>::FindMinGlobalTrainingParams PCAFMGParams;
@@ -75,14 +80,8 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	linearKRRFMGParams.LowerMaxBasisFunctions = 50;
 	linearKRRFMGParams.UpperMaxBasisFunctions = 500;
 	auto const linearKRRRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<LinearKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, linearKRRDiagnostics, linearKRRFMGParams, normaliserFMGParams, PCAFMGParams, featureSelectionFMGParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(linearKRRRegressor, regressor);
-	dlib::serialize(linearKRRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, linearKRRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, linearKRRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(linearKRRRegressor), linearKRRRegressorMD5);
+	EXPECT_EQ(GetMD5(linearKRRDiagnostics), linearKRRDiagnosticsMD5);
 
 	std::vector<T> polynomialKRRDiagnostics;
 	PolynomialKRR::FindMinGlobalTrainingParams polynomialKRRFMGParams;
@@ -97,14 +96,8 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	polynomialKRRFMGParams.KernelFindMinGlobalTrainingParams.LowerDegree = 1.0;
 	polynomialKRRFMGParams.KernelFindMinGlobalTrainingParams.UpperGamma = 1.0;
 	auto const polynomialKRRRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<PolynomialKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, polynomialKRRDiagnostics, polynomialKRRFMGParams, normaliserFMGParams, PCAFMGParams, featureSelectionFMGParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(polynomialKRRRegressor, regressor);
-	dlib::serialize(polynomialKRRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, polynomialKRRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, polynomialKRRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(polynomialKRRRegressor), polynomialKRRRegressorMD5);
+	EXPECT_EQ(GetMD5(polynomialKRRDiagnostics), polynomialKRRDiagnosticsMD5);
 
 	std::vector<T> radialBasisKRRDiagnostics;
 	RadialBasisKRR::FindMinGlobalTrainingParams radialBasisKRRFMGParams;
@@ -115,14 +108,8 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	radialBasisKRRFMGParams.KernelFindMinGlobalTrainingParams.LowerGamma = 1.0;
 	radialBasisKRRFMGParams.KernelFindMinGlobalTrainingParams.UpperGamma = 2.0;
 	auto const radialBasisKRRRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<RadialBasisKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, radialBasisKRRDiagnostics, radialBasisKRRFMGParams, normaliserFMGParams, PCAFMGParams, featureSelectionFMGParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(radialBasisKRRRegressor, regressor);
-	dlib::serialize(radialBasisKRRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, radialBasisKRRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, radialBasisKRRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(radialBasisKRRRegressor), radialBasisKRRRegressorMD5);
+	EXPECT_EQ(GetMD5(radialBasisKRRDiagnostics), radialBasisKRRDiagnosticsMD5);
 
 	std::vector<T> sigmoidKRRDiagnostics;
 	SigmoidKRR::FindMinGlobalTrainingParams sigmoidKRRFMGParams;
@@ -135,14 +122,8 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	sigmoidKRRFMGParams.KernelFindMinGlobalTrainingParams.LowerCoeff = 0.0;
 	sigmoidKRRFMGParams.KernelFindMinGlobalTrainingParams.UpperCoeff = 1.0;
 	auto const sigmoidKRRRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<SigmoidKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, sigmoidKRRDiagnostics, sigmoidKRRFMGParams, normaliserFMGParams, PCAFMGParams, featureSelectionFMGParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(sigmoidKRRRegressor, regressor);
-	dlib::serialize(sigmoidKRRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, sigmoidKRRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, sigmoidKRRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(sigmoidKRRRegressor), sigmoidKRRRegressorMD5);
+	EXPECT_EQ(GetMD5(sigmoidKRRDiagnostics), sigmoidKRRDiagnosticsMD5);
 
 	std::vector<T> linearSVRDiagnostics;
 	LinearSVR::FindMinGlobalTrainingParams linearSVRFMGParams;
@@ -155,14 +136,8 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	linearSVRFMGParams.LowerCacheSize = 50;
 	linearSVRFMGParams.UpperCacheSize = 300;
 	auto const linearSVRRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<LinearSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, linearSVRDiagnostics, linearSVRFMGParams, normaliserFMGParams, PCAFMGParams, featureSelectionFMGParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(linearSVRRegressor, regressor);
-	dlib::serialize(linearSVRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, linearSVRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, linearSVRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(linearSVRRegressor), linearSVRRegressorMD5);
+	EXPECT_EQ(GetMD5(linearSVRDiagnostics), linearSVRDiagnosticsMD5);
 
 	std::vector<T> polynomialSVRDiagnostics;
 	PolynomialSVR::FindMinGlobalTrainingParams polynomialSVRFMGParams;
@@ -181,14 +156,8 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	polynomialSVRFMGParams.KernelFindMinGlobalTrainingParams.LowerDegree = 1.0;
 	polynomialSVRFMGParams.KernelFindMinGlobalTrainingParams.UpperGamma = 1.0;
 	auto const polynomialSVRRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<PolynomialSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, polynomialSVRDiagnostics, polynomialSVRFMGParams, normaliserFMGParams, PCAFMGParams, featureSelectionFMGParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(polynomialSVRRegressor, regressor);
-	dlib::serialize(polynomialSVRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, polynomialSVRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, polynomialSVRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(polynomialSVRRegressor), polynomialSVRRegressorMD5);
+	EXPECT_EQ(GetMD5(polynomialSVRDiagnostics), polynomialSVRDiagnosticsMD5);
 
 	std::vector<T> radialBasisSVRDiagnostics;
 	RadialBasisSVR::FindMinGlobalTrainingParams radialBasisSVRFMGParams;
@@ -203,14 +172,8 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	radialBasisSVRFMGParams.KernelFindMinGlobalTrainingParams.LowerGamma = 1.0;
 	radialBasisSVRFMGParams.KernelFindMinGlobalTrainingParams.UpperGamma = 2.0;
 	auto const radialBasisSVRRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<RadialBasisSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, radialBasisSVRDiagnostics, radialBasisSVRFMGParams, normaliserFMGParams, PCAFMGParams, featureSelectionFMGParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(radialBasisSVRRegressor, regressor);
-	dlib::serialize(radialBasisSVRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, radialBasisSVRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, radialBasisSVRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(radialBasisSVRRegressor), radialBasisSVRRegressorMD5);
+	EXPECT_EQ(GetMD5(radialBasisSVRDiagnostics), radialBasisSVRDiagnosticsMD5);
 
 	std::vector<T> sigmoidSVRDiagnostics;
 	SigmoidSVR::FindMinGlobalTrainingParams sigmoidSVRFMGParams;
@@ -227,14 +190,8 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	sigmoidSVRFMGParams.KernelFindMinGlobalTrainingParams.LowerCoeff = 0.0;
 	sigmoidSVRFMGParams.KernelFindMinGlobalTrainingParams.UpperCoeff = 1.0;
 	auto const sigmoidSVRRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<SigmoidSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, sigmoidSVRDiagnostics, sigmoidSVRFMGParams, normaliserFMGParams, PCAFMGParams, featureSelectionFMGParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(sigmoidSVRRegressor, regressor);
-	dlib::serialize(sigmoidSVRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, sigmoidSVRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, sigmoidSVRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(sigmoidSVRRegressor), sigmoidSVRRegressorMD5);
+	EXPECT_EQ(GetMD5(sigmoidSVRDiagnostics), sigmoidSVRDiagnosticsMD5);
 
 	std::vector<T> denseRFDiagnostics;
 	DenseRF::FindMinGlobalTrainingParams denseRFFMGParams;
@@ -245,12 +202,6 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	denseRFFMGParams.LowerSubsamplingFraction = 0.2;
 	denseRFFMGParams.UpperSubsamplingFraction = 0.8;
 	auto const denseRFRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<DenseRF>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, denseRFDiagnostics, denseRFFMGParams, normaliserFMGParams, PCAFMGParams, featureSelectionFMGParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(denseRFRegressor, regressor);
-	dlib::serialize(denseRFDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, denseRFRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, denseRFDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(denseRFRegressor), denseRFRegressorMD5);
+	EXPECT_EQ(GetMD5(denseRFDiagnostics), denseRFDiagnosticsMD5);
 }

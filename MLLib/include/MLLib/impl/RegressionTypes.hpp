@@ -75,7 +75,6 @@ namespace Regressors
 
 		template <class KernelType>
 		KernelRidgeRegression<KernelType>::OneShotTrainingParams::OneShotTrainingParams() : 
-			RegressionComponentBase::RegressionOneShotTrainingParamsBase(KernelRidgeRegression::RegressorTypeEnum), 
 			MaxBasisFunctions(400),
 			Lambda(1.e-6)
 		{
@@ -84,8 +83,7 @@ namespace Regressors
 		template <class KernelType> template <size_t TotalNumParams>
 		KernelRidgeRegression<KernelType>::OneShotTrainingParams::OneShotTrainingParams(col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset) :  
-			RegressionComponentBase::RegressionOneShotTrainingParamsBase(KernelRidgeRegression::RegressorTypeEnum)
+			unsigned& paramsOffset)
 		{
 			if (optimiseParamsMap[0].first)
 			{
@@ -106,6 +104,12 @@ namespace Regressors
 				Lambda = optimiseParamsMap[1].second;
 			}
 			KernelType::UnpackParameters(KernelOneShotTrainingParams, vecParams, optimiseParamsMap, NumRegressionParams, paramsOffset);
+		}
+
+		template <class KernelType>
+		RegressorTypes KernelRidgeRegression<KernelType>::OneShotTrainingParams::GetRegressionType() const
+		{
+			return KernelRidgeRegression::RegressorTypeEnum;
 		}
 
 		template <class KernelType>
@@ -201,7 +205,6 @@ namespace Regressors
 
 		template <class KernelType>
 		SupportVectorRegression<KernelType>::OneShotTrainingParams::OneShotTrainingParams() :
-			RegressionComponentBase::RegressionOneShotTrainingParamsBase(SupportVectorRegression::RegressorTypeEnum),
 			C(1.0),
 			Epsilon(1.e-3),
 			EpsilonInsensitivity(0.1),
@@ -212,8 +215,7 @@ namespace Regressors
 		template <class KernelType> template <size_t TotalNumParams>
 		SupportVectorRegression<KernelType>::OneShotTrainingParams::OneShotTrainingParams(col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset) :
-			RegressionComponentBase::RegressionOneShotTrainingParamsBase(SupportVectorRegression::RegressorTypeEnum)
+			unsigned& paramsOffset)
 		{
 			if (optimiseParamsMap[0].first)
 			{
@@ -252,6 +254,12 @@ namespace Regressors
 				CacheSize = optimiseParamsMap[3].second;
 			}
 			KernelType::UnpackParameters(KernelOneShotTrainingParams, vecParams, optimiseParamsMap, NumRegressionParams, paramsOffset);
+		}
+
+		template <class KernelType>
+		RegressorTypes SupportVectorRegression<KernelType>::OneShotTrainingParams::GetRegressionType() const
+		{
+			return SupportVectorRegression::RegressorTypeEnum;
 		}
 
 		template <class KernelType>
@@ -387,7 +395,6 @@ namespace Regressors
 
 		template <class ExtractorType>
 		RandomForestRegression<ExtractorType>::OneShotTrainingParams::OneShotTrainingParams() :
-			RegressionComponentBase::RegressionOneShotTrainingParamsBase(RandomForestRegression::RegressorTypeEnum),
 			NumTrees(1000),
 			MinSamplesPerLeaf(5),
 			SubsamplingFraction(1.0/3.0)
@@ -397,8 +404,7 @@ namespace Regressors
 		template <class ExtractorType> template <size_t TotalNumParams>
 		RandomForestRegression<ExtractorType>::OneShotTrainingParams::OneShotTrainingParams(col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset) :
-			RegressionComponentBase::RegressionOneShotTrainingParamsBase(RandomForestRegression::RegressorTypeEnum)
+			unsigned& paramsOffset)
 		{
 			if (optimiseParamsMap[0].first)
 			{
@@ -428,6 +434,12 @@ namespace Regressors
 				SubsamplingFraction = optimiseParamsMap[2].second;
 			}
 			ExtractorType::UnpackParameters(ExtractorOneShotTrainingParams, vecParams, optimiseParamsMap, NumRegressionParams, paramsOffset);
+		}
+
+		template <class ExtractorType>
+		RegressorTypes RandomForestRegression<ExtractorType>::OneShotTrainingParams::GetRegressionType() const
+		{
+			return RandomForestRegression::RegressorTypeEnum;
 		}
 
 		template <class ExtractorType>

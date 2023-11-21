@@ -2,6 +2,15 @@
 #include <MLLib/Regressor.h>
 #include <dlib/md5.h>
 
+template <typename T>
+std::string GetMD5(T const& item)
+{
+	using namespace dlib;
+	std::stringstream ss;
+	serialize(item, ss);
+	return dlib::md5(ss);
+}
+
 TEST(CrossValidationTraining, RegressorTests)
 {
 	using namespace Regressors;
@@ -35,8 +44,6 @@ TEST(CrossValidationTraining, RegressorTests)
 	CrossValidationMetric const metric = CrossValidationMetric::SumSquareMean;
 	size_t const numFolds = 4;
 	size_t const numThreads = 16;
-	std::stringstream regressor;
-	std::stringstream diagnostics;
 	const std::string linearKRRRegressorMD5 = "a1f52f0c7439f8f13ccbd56af837ec02";
 	const std::string linearKRRDiagnosticsMD5 = "a6e4415cf02c1381f7be04dee5ee20b5";
 	const std::string polynomialKRRRegressorMD5 = "5e6afb1374c7393a932a9b6eff8cd658";
@@ -55,8 +62,6 @@ TEST(CrossValidationTraining, RegressorTests)
 	const std::string sigmoidSVRDiagnosticsMD5 = "bbf078a8c6648a338fdec7c53ee2e3fe";
 	const std::string denseRFRegressorMD5 = "f6f21019febf9fe0455cbcff0ddbaf7d";
 	const std::string denseRFDiagnosticsMD5 = "b1f2d546bd20a9834d76731afdf7076d";
-	std::string regressorMD5;
-	std::string diagnosticsMD5;
 
 	ModifierTypes::NormaliserModifier<T>::CrossValidationTrainingParams normaliserCVParams;
 	ModifierTypes::InputPCAModifier<T>::CrossValidationTrainingParams PCACVParams;
@@ -69,14 +74,8 @@ TEST(CrossValidationTraining, RegressorTests)
 	linearKRRCVParams.MaxBasisFunctionsToTry = { 200, 400 };
 	linearKRRCVParams.LambdaToTry = { 1.e-6, 10.0 };
 	auto const linearKRRRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<LinearKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, linearKRRDiagnostics, linearKRRCVParams, normaliserCVParams, PCACVParams, featureSelectionCVParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(linearKRRRegressor, regressor);
-	dlib::serialize(linearKRRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, linearKRRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, linearKRRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(linearKRRRegressor), linearKRRRegressorMD5);
+	EXPECT_EQ(GetMD5(linearKRRDiagnostics), linearKRRDiagnosticsMD5);
 
 	std::vector<T> polynomialKRRDiagnostics;
 	PolynomialKRR::CrossValidationTrainingParams polynomialKRRCVParams;
@@ -86,14 +85,8 @@ TEST(CrossValidationTraining, RegressorTests)
 	polynomialKRRCVParams.KernelCrossValidationTrainingParams.CoeffToTry = { 0.0, 1.0 };
 	polynomialKRRCVParams.KernelCrossValidationTrainingParams.DegreeToTry = { 1.0 };
 	auto const polynomialKRRRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<PolynomialKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, polynomialKRRDiagnostics, polynomialKRRCVParams, normaliserCVParams, PCACVParams, featureSelectionCVParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(polynomialKRRRegressor, regressor);
-	dlib::serialize(polynomialKRRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, polynomialKRRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, polynomialKRRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(polynomialKRRRegressor), polynomialKRRRegressorMD5);
+	EXPECT_EQ(GetMD5(polynomialKRRDiagnostics), polynomialKRRDiagnosticsMD5);
 
 	std::vector<T> radialBasisKRRDiagnostics;
 	RadialBasisKRR::CrossValidationTrainingParams radialBasisKRRCVParams;
@@ -101,14 +94,8 @@ TEST(CrossValidationTraining, RegressorTests)
 	radialBasisKRRCVParams.LambdaToTry = { 1.e-6, 10.0 };
 	radialBasisKRRCVParams.KernelCrossValidationTrainingParams.GammaToTry = { 1.0, 2.0 };
 	auto const radialBasisKRRRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<RadialBasisKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, radialBasisKRRDiagnostics, radialBasisKRRCVParams, normaliserCVParams, PCACVParams, featureSelectionCVParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(radialBasisKRRRegressor, regressor);
-	dlib::serialize(radialBasisKRRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, radialBasisKRRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, radialBasisKRRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(radialBasisKRRRegressor), radialBasisKRRRegressorMD5);
+	EXPECT_EQ(GetMD5(radialBasisKRRDiagnostics), radialBasisKRRDiagnosticsMD5);
 
 	std::vector<T> sigmoidKRRDiagnostics;
 	SigmoidKRR::CrossValidationTrainingParams sigmoidKRRCVParams;
@@ -117,14 +104,8 @@ TEST(CrossValidationTraining, RegressorTests)
 	sigmoidKRRCVParams.KernelCrossValidationTrainingParams.GammaToTry = { 1.0, 2.0 };
 	sigmoidKRRCVParams.KernelCrossValidationTrainingParams.CoeffToTry = { 0.0, 1.0 };
 	auto const sigmoidKRRRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<SigmoidKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, sigmoidKRRDiagnostics, sigmoidKRRCVParams, normaliserCVParams, PCACVParams, featureSelectionCVParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(sigmoidKRRRegressor, regressor);
-	dlib::serialize(sigmoidKRRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, sigmoidKRRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, sigmoidKRRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(sigmoidKRRRegressor), sigmoidKRRRegressorMD5);
+	EXPECT_EQ(GetMD5(sigmoidKRRDiagnostics), sigmoidKRRDiagnosticsMD5);
 
 	std::vector<T> linearSVRDiagnostics;
 	LinearSVR::CrossValidationTrainingParams linearSVRCVParams;
@@ -133,14 +114,8 @@ TEST(CrossValidationTraining, RegressorTests)
 	linearSVRCVParams.EpsilonInsensitivityToTry = { 0.1, 0.2 };
 	linearSVRCVParams.CacheSizeToTry = { 200 };
 	auto const linearSVRRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<LinearSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, linearSVRDiagnostics, linearSVRCVParams, normaliserCVParams, PCACVParams, featureSelectionCVParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(linearSVRRegressor, regressor);
-	dlib::serialize(linearSVRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, linearSVRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, linearSVRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(linearSVRRegressor), linearSVRRegressorMD5);
+	EXPECT_EQ(GetMD5(linearSVRDiagnostics), linearSVRDiagnosticsMD5);
 
 	std::vector<T> polynomialSVRDiagnostics;
 	PolynomialSVR::CrossValidationTrainingParams polynomialSVRCVParams;
@@ -152,14 +127,8 @@ TEST(CrossValidationTraining, RegressorTests)
 	polynomialKRRCVParams.KernelCrossValidationTrainingParams.CoeffToTry = { 0.0, 1.0 };
 	polynomialKRRCVParams.KernelCrossValidationTrainingParams.DegreeToTry = { 1.0 };
 	auto const polynomialSVRRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<PolynomialSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, polynomialSVRDiagnostics, polynomialSVRCVParams, normaliserCVParams, PCACVParams, featureSelectionCVParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(polynomialSVRRegressor, regressor);
-	dlib::serialize(polynomialSVRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, polynomialSVRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, polynomialSVRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(polynomialSVRRegressor), polynomialSVRRegressorMD5);
+	EXPECT_EQ(GetMD5(polynomialSVRDiagnostics), polynomialSVRDiagnosticsMD5);
 
 	std::vector<T> radialBasisSVRDiagnostics;
 	RadialBasisSVR::CrossValidationTrainingParams radialBasisSVRCVParams;
@@ -169,14 +138,8 @@ TEST(CrossValidationTraining, RegressorTests)
 	radialBasisSVRCVParams.CacheSizeToTry = { 200 };
 	radialBasisSVRCVParams.KernelCrossValidationTrainingParams.GammaToTry = { 1.0, 2.0 };
 	auto const radialBasisSVRRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<RadialBasisSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, radialBasisSVRDiagnostics, radialBasisSVRCVParams, normaliserCVParams, PCACVParams, featureSelectionCVParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(radialBasisSVRRegressor, regressor);
-	dlib::serialize(radialBasisSVRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, radialBasisSVRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, radialBasisSVRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(radialBasisSVRRegressor), radialBasisSVRRegressorMD5);
+	EXPECT_EQ(GetMD5(radialBasisSVRDiagnostics), radialBasisSVRDiagnosticsMD5);
 
 	std::vector<T> sigmoidSVRDiagnostics;
 	SigmoidSVR::CrossValidationTrainingParams sigmoidSVRCVParams;
@@ -187,14 +150,8 @@ TEST(CrossValidationTraining, RegressorTests)
 	sigmoidSVRCVParams.KernelCrossValidationTrainingParams.GammaToTry = { 1.0, 2.0 };
 	sigmoidSVRCVParams.KernelCrossValidationTrainingParams.CoeffToTry = { 0.0, 1.0 };
 	auto const sigmoidSVRRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<SigmoidSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, sigmoidSVRDiagnostics, sigmoidSVRCVParams, normaliserCVParams, PCACVParams, featureSelectionCVParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(sigmoidSVRRegressor, regressor);
-	dlib::serialize(sigmoidSVRDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, sigmoidSVRRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, sigmoidSVRDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(sigmoidSVRRegressor), sigmoidSVRRegressorMD5);
+	EXPECT_EQ(GetMD5(sigmoidSVRDiagnostics), sigmoidSVRDiagnosticsMD5);
 
 	std::vector<T> denseRFDiagnostics;
 	DenseRF::CrossValidationTrainingParams denseRFCVParams;
@@ -202,12 +159,6 @@ TEST(CrossValidationTraining, RegressorTests)
 	denseRFCVParams.MinSamplesPerLeafToTry = { 3, 5 };
 	denseRFCVParams.SubsamplingFractionToTry = { 1.0 / 3.0, 0.5 };
 	auto const denseRFRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<DenseRF>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, denseRFDiagnostics, denseRFCVParams, normaliserCVParams, PCACVParams, featureSelectionCVParams);
-	regressor.clear();
-	diagnostics.clear();
-	serialize(denseRFRegressor, regressor);
-	dlib::serialize(denseRFDiagnostics, diagnostics);
-	regressorMD5 = dlib::md5(regressor);
-	diagnosticsMD5 = dlib::md5(diagnostics);
-	EXPECT_EQ(regressorMD5, denseRFRegressorMD5);
-	EXPECT_EQ(diagnosticsMD5, denseRFDiagnosticsMD5);
+	EXPECT_EQ(GetMD5(denseRFRegressor), denseRFRegressorMD5);
+	EXPECT_EQ(GetMD5(denseRFDiagnostics), denseRFDiagnosticsMD5);
 }

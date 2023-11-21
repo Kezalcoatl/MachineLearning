@@ -28,15 +28,8 @@ namespace Regressors
 
 			struct RegressionOneShotTrainingParamsBase
 			{
-			private:
-				RegressorTypes regressionType;
 			public:
-				virtual RegressorTypes const& GetRegressionType() const { return regressionType; }
-			protected:
-				RegressionOneShotTrainingParamsBase(RegressorTypes const& regressionType_)
-					: regressionType(regressionType_)
-				{
-				}
+				virtual RegressorTypes GetRegressionType() const = 0;
 			};
 
 			template <class RegressionType, size_t I = 0, class... ModifierOneShotTrainingParamsTypes, class... ModifierFunctionTypes>
@@ -89,6 +82,8 @@ namespace Regressors
 					 std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 					 unsigned& paramsOffset);
 
+				 RegressorTypes GetRegressionType() const override;
+
 				 friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				 {
 					 dlib::serialize(item.MaxBasisFunctions, out);
@@ -100,7 +95,7 @@ namespace Regressors
 				 {
 					 dlib::deserialize(item.MaxBasisFunctions, in);
 					 dlib::deserialize(item.Lambda, in);
-					 deserialize(item.KernelOneShotTraininParams, in);
+					 deserialize(item.KernelOneShotTrainingParams, in);
 				 }
 			 };
 
@@ -176,6 +171,8 @@ namespace Regressors
 				OneShotTrainingParams(col_vector<T> const& vecParams,
 					std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 					unsigned& paramsOffset);
+
+				RegressorTypes GetRegressionType() const override;
 
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{
@@ -273,6 +270,8 @@ namespace Regressors
 				OneShotTrainingParams(col_vector<T> const& vecParams,
 					std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 					unsigned& paramsOffset);
+
+				RegressorTypes GetRegressionType() const override;
 
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{

@@ -11,7 +11,7 @@ std::string GetMD5(T const& item)
 	return dlib::md5(ss);
 }
 
-TEST(OneShotTraining, RegressorTests)
+TEST(SerializationDeserialization, RegressorTests)
 {
 	using namespace Regressors;
 	typedef double T;
@@ -45,24 +45,8 @@ TEST(OneShotTraining, RegressorTests)
 	size_t const numFolds = 4;
 	size_t const maxNumCalls = 1000;
 	size_t const numThreads = 16;
-	const std::string linearKRRRegressorMD5 = "3ee061dc9c21c0fb86dd372b887ebf2b";
-	const std::string linearKRRDiagnosticsMD5 = "b3fea5b0c03d4aafb817e7f38272bf0f";
-	const std::string polynomialKRRRegressorMD5 = "6195121f14edef73c5356df546dcb1d0";
-	const std::string polynomialKRRDiagnosticsMD5 = "b3fea5b0c03d4aafb817e7f38272bf0f";
-	const std::string radialBasisKRRRegressorMD5 = "a3cef6e7f2ab31344ce478011f8e23da";
-	const std::string radialBasisKRRDiagnosticsMD5 = "152510c1200a9c21bdbd80e02ece6918";
-	const std::string sigmoidKRRRegressorMD5 = "6f922da169106633872f790a27119d65";
-	const std::string sigmoidKRRDiagnosticsMD5 = "67bd96ab0cead9ad0706eec832a6d7a5";
-	const std::string linearSVRRegressorMD5 = "9006d04a29e99b41dcfd31b61888fd69";
-	const std::string linearSVRDiagnosticsMD5 = "c10726199aa5d8d78a60d962e62fbaf9";
-	const std::string polynomialSVRRegressorMD5 = "94512b091cdb7b284e5039a0aeddaeee";
-	const std::string polynomialSVRDiagnosticsMD5 = "c10726199aa5d8d78a60d962e62fbaf9";
-	const std::string radialBasisSVRRegressorMD5 = "04259b503902a942a551677461bd03bd";
-	const std::string radialBasisSVRDiagnosticsMD5 = "ab52eb8ef6aaeb0acc2f0f471986b314";
-	const std::string sigmoidSVRRegressorMD5 = "79cdc6eb1551e0c360ab05676d70d0d2";
-	const std::string sigmoidSVRDiagnosticsMD5 = "a119c2879cbbf92c29575d8e0518bd63";
-	const std::string denseRFRegressorMD5 = "35b8b7c53a53f3450317714a4e090300";
-	const std::string denseRFDiagnosticsMD5 = "8dce9be578d78c26ac25bb27fed929bd";
+	std::stringstream regressorSS;
+	Regressor<T> regressor2;
 
 	ModifierTypes::NormaliserModifier<T>::OneShotTrainingParams normaliserOSParams;
 	ModifierTypes::InputPCAModifier<T>::OneShotTrainingParams PCAOSParams;
@@ -75,9 +59,12 @@ TEST(OneShotTraining, RegressorTests)
 	linearKRROSParams.MaxBasisFunctions = 400;
 	linearKRROSParams.Lambda = 1.e-6;
 	auto const linearKRRRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<LinearKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, linearKRRDiagnostics, linearKRROSParams, normaliserOSParams, PCAOSParams, featureSelectionOSParams);
-	EXPECT_EQ(GetMD5(linearKRRRegressor), linearKRRRegressorMD5);
-	EXPECT_EQ(GetMD5(linearKRRDiagnostics), linearKRRDiagnosticsMD5);
+	regressorSS.clear();
+	serialize(linearKRRRegressor, regressorSS);
+	deserialize(regressor2, regressorSS);
+	EXPECT_EQ(GetMD5(linearKRRRegressor), GetMD5(regressor2));
 
+	regressorSS.clear();
 	std::vector<T> polynomialKRRDiagnostics;
 	PolynomialKRR::OneShotTrainingParams polynomialKRROSParams;
 	polynomialKRROSParams.MaxBasisFunctions = 400;
@@ -86,18 +73,22 @@ TEST(OneShotTraining, RegressorTests)
 	polynomialKRROSParams.KernelOneShotTrainingParams.Coeff = 0.0;
 	polynomialKRROSParams.KernelOneShotTrainingParams.Degree = 1.0;
 	auto const polynomialKRRRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<PolynomialKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, polynomialKRRDiagnostics, polynomialKRROSParams, normaliserOSParams, PCAOSParams, featureSelectionOSParams);
-	EXPECT_EQ(GetMD5(polynomialKRRRegressor), polynomialKRRRegressorMD5);
-	EXPECT_EQ(GetMD5(polynomialKRRDiagnostics), polynomialKRRDiagnosticsMD5);
+	serialize(polynomialKRRRegressor, regressorSS);
+	deserialize(regressor2, regressorSS);
+	EXPECT_EQ(GetMD5(polynomialKRRRegressor), GetMD5(regressor2));
 
+	regressorSS.clear();
 	std::vector<T> radialBasisKRRDiagnostics;
 	RadialBasisKRR::OneShotTrainingParams radialBasisKRROSParams;
 	radialBasisKRROSParams.MaxBasisFunctions = 400;
 	radialBasisKRROSParams.Lambda = 1e-6;
 	radialBasisKRROSParams.KernelOneShotTrainingParams.Gamma = 1.0;
 	auto const radialBasisKRRRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<RadialBasisKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, radialBasisKRRDiagnostics, radialBasisKRROSParams, normaliserOSParams, PCAOSParams, featureSelectionOSParams);
-	EXPECT_EQ(GetMD5(radialBasisKRRRegressor), radialBasisKRRRegressorMD5);
-	EXPECT_EQ(GetMD5(radialBasisKRRDiagnostics), radialBasisKRRDiagnosticsMD5);
+	serialize(radialBasisKRRRegressor, regressorSS);
+	deserialize(regressor2, regressorSS);
+	EXPECT_EQ(GetMD5(radialBasisKRRRegressor), GetMD5(regressor2));
 
+	regressorSS.clear();
 	std::vector<T> sigmoidKRRDiagnostics;
 	SigmoidKRR::OneShotTrainingParams sigmoidKRROSParams;
 	sigmoidKRROSParams.MaxBasisFunctions = 400;
@@ -105,9 +96,11 @@ TEST(OneShotTraining, RegressorTests)
 	sigmoidKRROSParams.KernelOneShotTrainingParams.Gamma = 1.0;
 	sigmoidKRROSParams.KernelOneShotTrainingParams.Coeff = 0.0;
 	auto const sigmoidKRRRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<SigmoidKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, sigmoidKRRDiagnostics, sigmoidKRROSParams, normaliserOSParams, PCAOSParams, featureSelectionOSParams);
-	EXPECT_EQ(GetMD5(sigmoidKRRRegressor), sigmoidKRRRegressorMD5);
-	EXPECT_EQ(GetMD5(sigmoidKRRDiagnostics), sigmoidKRRDiagnosticsMD5);
+	serialize(sigmoidKRRRegressor, regressorSS);
+	deserialize(regressor2, regressorSS);
+	EXPECT_EQ(GetMD5(sigmoidKRRRegressor), GetMD5(regressor2));
 
+	regressorSS.clear();
 	std::vector<T> linearSVRDiagnostics;
 	LinearSVR::OneShotTrainingParams linearSVROSParams;
 	linearSVROSParams.C = 1.0;
@@ -115,9 +108,11 @@ TEST(OneShotTraining, RegressorTests)
 	linearSVROSParams.EpsilonInsensitivity = 0.1;
 	linearSVROSParams.CacheSize = 200;
 	auto const linearSVRRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<LinearSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, linearSVRDiagnostics, linearSVROSParams, normaliserOSParams, PCAOSParams, featureSelectionOSParams);
-	EXPECT_EQ(GetMD5(linearSVRRegressor), linearSVRRegressorMD5);
-	EXPECT_EQ(GetMD5(linearSVRDiagnostics), linearSVRDiagnosticsMD5);
+	serialize(linearSVRRegressor, regressorSS);
+	deserialize(regressor2, regressorSS);
+	EXPECT_EQ(GetMD5(linearSVRRegressor), GetMD5(regressor2));
 
+	regressorSS.clear();
 	std::vector<T> polynomialSVRDiagnostics;
 	PolynomialSVR::OneShotTrainingParams polynomialSVROSParams;
 	polynomialSVROSParams.C = 1.0;
@@ -128,9 +123,11 @@ TEST(OneShotTraining, RegressorTests)
 	polynomialSVROSParams.KernelOneShotTrainingParams.Coeff = 0.0;
 	polynomialSVROSParams.KernelOneShotTrainingParams.Degree = 1.0;
 	auto const polynomialSVRRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<PolynomialSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, polynomialSVRDiagnostics, polynomialSVROSParams, normaliserOSParams, PCAOSParams, featureSelectionOSParams);
-	EXPECT_EQ(GetMD5(polynomialSVRRegressor), polynomialSVRRegressorMD5);
-	EXPECT_EQ(GetMD5(polynomialSVRDiagnostics), polynomialSVRDiagnosticsMD5);
+	serialize(polynomialSVRRegressor, regressorSS);
+	deserialize(regressor2, regressorSS);
+	EXPECT_EQ(GetMD5(polynomialSVRRegressor), GetMD5(regressor2));
 
+	regressorSS.clear();
 	std::vector<T> radialBasisSVRDiagnostics;
 	RadialBasisSVR::OneShotTrainingParams radialBasisSVROSParams;
 	radialBasisSVROSParams.C = 1.0;
@@ -139,9 +136,11 @@ TEST(OneShotTraining, RegressorTests)
 	radialBasisSVROSParams.CacheSize = 200;
 	radialBasisSVROSParams.KernelOneShotTrainingParams.Gamma = 1.0;
 	auto const radialBasisSVRRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<RadialBasisSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, radialBasisSVRDiagnostics, radialBasisSVROSParams, normaliserOSParams, PCAOSParams, featureSelectionOSParams);
-	EXPECT_EQ(GetMD5(radialBasisSVRRegressor), radialBasisSVRRegressorMD5);
-	EXPECT_EQ(GetMD5(radialBasisSVRDiagnostics), radialBasisSVRDiagnosticsMD5);
+	serialize(radialBasisSVRRegressor, regressorSS);
+	deserialize(regressor2, regressorSS);
+	EXPECT_EQ(GetMD5(radialBasisSVRRegressor), GetMD5(regressor2));
 
+	regressorSS.clear();
 	std::vector<T> sigmoidSVRDiagnostics;
 	SigmoidSVR::OneShotTrainingParams sigmoidSVROSParams;
 	sigmoidSVROSParams.C = 1.0;
@@ -151,15 +150,18 @@ TEST(OneShotTraining, RegressorTests)
 	sigmoidSVROSParams.KernelOneShotTrainingParams.Gamma = 1.0;
 	sigmoidSVROSParams.KernelOneShotTrainingParams.Coeff = 0.0;
 	auto const sigmoidSVRRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<SigmoidSVR>(inputExamples, targetExamples, randomSeed, metric, numFolds, sigmoidSVRDiagnostics, sigmoidSVROSParams, normaliserOSParams, PCAOSParams, featureSelectionOSParams);
-	EXPECT_EQ(GetMD5(sigmoidSVRRegressor), sigmoidSVRRegressorMD5);
-	EXPECT_EQ(GetMD5(sigmoidSVRDiagnostics), sigmoidSVRDiagnosticsMD5);
+	serialize(sigmoidSVRRegressor, regressorSS);
+	deserialize(regressor2, regressorSS);
+	EXPECT_EQ(GetMD5(sigmoidSVRRegressor), GetMD5(regressor2));
 
+	regressorSS.clear();
 	std::vector<T> denseRFDiagnostics;
 	DenseRF::OneShotTrainingParams denseRFOSParams;
 	denseRFOSParams.NumTrees = 1000;
 	denseRFOSParams.MinSamplesPerLeaf = 5;
 	denseRFOSParams.SubsamplingFraction = 1.0 / 3.0;
 	auto const denseRFRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<DenseRF>(inputExamples, targetExamples, randomSeed, metric, numFolds, denseRFDiagnostics, denseRFOSParams, normaliserOSParams, PCAOSParams, featureSelectionOSParams);
-	EXPECT_EQ(GetMD5(denseRFRegressor), denseRFRegressorMD5);
-	EXPECT_EQ(GetMD5(denseRFDiagnostics), denseRFDiagnosticsMD5);
+	serialize(denseRFRegressor, regressorSS);
+	deserialize(regressor2, regressorSS);
+	EXPECT_EQ(GetMD5(denseRFRegressor), GetMD5(regressor2));
 }
