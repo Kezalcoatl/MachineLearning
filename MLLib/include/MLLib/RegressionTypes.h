@@ -5,8 +5,8 @@
 
 namespace Regressors
 {
-	template <typename T>
-	class Regressor;
+	template <class RegressionType, class... ModifierFunctionTypes>
+	class impl;
 
 	namespace RegressionTypes
 	{
@@ -32,27 +32,21 @@ namespace Regressors
 				virtual RegressorTypes GetRegressionType() const = 0;
 			};
 
-			template <class RegressionType, size_t I = 0, class... ModifierOneShotTrainingParamsTypes, class... ModifierFunctionTypes>
-			static Regressor<typename RegressionType::T> TrainModifiersAndRegressor(std::vector<col_vector<typename RegressionType::T>> const& inputExamples,
-				std::vector<typename RegressionType::T> const& targetExamples,
+			template <class RegressionType, size_t I = 0, class... ModifierOneShotTrainingParamsTypes>
+			static impl<RegressionType, typename ModifierOneShotTrainingParamsTypes::ModifierType::ModifierFunction...> TrainModifiersAndRegressor(std::vector<typename RegressionType::SampleType> const& inputExamples,
+				std::vector<typename RegressionType::SampleType::type> const& targetExamples,
 				typename RegressionType::OneShotTrainingParams const& regressionParams,
-				std::vector<typename RegressionType::T>& diagnostics,
-				typename RegressionType::T const& trainingError,
+				std::vector<typename RegressionType::SampleType::type>& diagnostics,
+				typename RegressionType::SampleType::type const& trainingError,
 				std::tuple<ModifierOneShotTrainingParamsTypes...> const& modifierOneShotParams,
-				std::tuple<ModifierFunctionTypes...> const& modifierFunctions);
+				std::tuple<typename ModifierOneShotTrainingParamsTypes::ModifierType::ModifierFunction...>& modifierFunctions);
 
 		protected:
 			template <class RegressionType, class... ModifierFunctionTypes>
-			static Regressor<typename RegressionType::T> MakeRegressor(typename RegressionType::DecisionFunction const& function,
+			static impl<RegressionType, ModifierFunctionTypes...> MakeRegressor(typename RegressionType::DecisionFunction const& function,
 				std::tuple<ModifierFunctionTypes...> const& modifiers,
-				typename RegressionType::T const& trainingError,
+				typename RegressionType::SampleType::type const& trainingError,
 				typename RegressionType::OneShotTrainingParams const& regressorTrainingParams);
-
-			template <class RegressionType, class... ModifierOneShotTrainingTypes>
-			static Regressor<typename RegressionType::T> Train(std::vector<col_vector<typename RegressionType::T>> const& inputExamples,
-				std::vector<typename RegressionType::T> const& targetExamples,
-				std::string const& randomSeed,
-				ModifierOneShotTrainingTypes const&... modifierOneShotParams);
 		};
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,7 +56,8 @@ namespace Regressors
 		{
 		public:
 			 RegressorTypes static const RegressorTypeEnum;
-			 typedef typename KernelType::T T;
+			 typedef typename KernelType::SampleType SampleType;
+			 typedef typename KernelType::SampleType::type T;
 			 typedef dlib::decision_function<typename KernelType::KernelFunctionType> DecisionFunction;
 
 			 KernelRidgeRegression() = delete;
@@ -80,7 +75,7 @@ namespace Regressors
 				 template <size_t TotalNumParams>
 				 OneShotTrainingParams(col_vector<T> const& vecParams,
 					 std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-					 unsigned& paramsOffset);
+					 size_t& paramsOffset);
 
 				 RegressorTypes GetRegressionType() const override;
 
@@ -120,14 +115,14 @@ namespace Regressors
 			 };
 
 			 template <class... ModifierFunctionTypes>
-			 static Regressor<T> Train(std::vector<col_vector<T>> const& inputExamples,
+			 static impl<KernelRidgeRegression, ModifierFunctionTypes...> Train(std::vector<SampleType> const& inputExamples,
 				 std::vector<T> const& targetExamples,
 				 OneShotTrainingParams const& regressionTrainingParams,
 				 std::vector<T>& LeaveOneOutValues,
 				 T const& trainingError,
 				 std::tuple<ModifierFunctionTypes...> const& modifierFunctions);
 
-			 static unsigned IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+			 static size_t IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 				 std::vector<OneShotTrainingParams>& regressionParamSets);
 
 			 template <size_t TotalNumParams>
@@ -136,7 +131,7 @@ namespace Regressors
 				 std::vector<bool>& isIntegerParam,
 				 FindMinGlobalTrainingParams const& fmgTrainingParams,
 				 std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				 unsigned& paramsOffset);
+				 size_t& paramsOffset);
 
 			 template <size_t TotalNumParams>
 			 static void ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
@@ -150,7 +145,8 @@ namespace Regressors
 		{
 		public:
 			RegressorTypes static const RegressorTypeEnum;
-			typedef typename KernelType::T T;
+			typedef typename KernelType::SampleType SampleType;
+			typedef typename KernelType::SampleType::type T;
 			typedef dlib::decision_function<typename KernelType::KernelFunctionType> DecisionFunction;
 
 			SupportVectorRegression() = delete;
@@ -170,7 +166,7 @@ namespace Regressors
 				template <size_t TotalNumParams>
 				OneShotTrainingParams(col_vector<T> const& vecParams,
 					std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-					unsigned& paramsOffset);
+					size_t& paramsOffset);
 
 				RegressorTypes GetRegressionType() const override;
 
@@ -220,14 +216,14 @@ namespace Regressors
 			};
 
 			template <class... ModifierFunctionTypes>
-			static Regressor<T> Train(std::vector<col_vector<T>> const& inputExamples,
+			static impl<SupportVectorRegression, ModifierFunctionTypes...> Train(std::vector<SampleType> const& inputExamples,
 				std::vector<T> const& targetExamples,
 				OneShotTrainingParams const& regressionTrainingParams,
 				std::vector<T>& Residuals,
 				T const& trainingError,
 				std::tuple<ModifierFunctionTypes...> const& modifierFunctions);
 
-			static unsigned IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+			static size_t IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 				std::vector<OneShotTrainingParams>& regressionParamSets);
 
 			template <size_t TotalNumParams>
@@ -236,7 +232,7 @@ namespace Regressors
 				std::vector<bool>& isIntegerParam,
 				FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned& paramsOffset);
+				size_t& paramsOffset);
 
 			template <size_t TotalNumParams>
 			static void ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
@@ -250,7 +246,8 @@ namespace Regressors
 		{
 		public:
 			RegressorTypes static const RegressorTypeEnum;
-			typedef typename ExtractorType::T T;
+			typedef typename ExtractorType::SampleType SampleType;
+			typedef typename ExtractorType::SampleType::type T;
 			typedef dlib::random_forest_regression_function<typename ExtractorType::ExtractorFunctionType> DecisionFunction;
 
 			RandomForestRegression() = delete;
@@ -269,7 +266,7 @@ namespace Regressors
 				template <size_t TotalNumParams>
 				OneShotTrainingParams(col_vector<T> const& vecParams,
 					std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-					unsigned& paramsOffset);
+					size_t& paramsOffset);
 
 				RegressorTypes GetRegressionType() const override;
 
@@ -314,14 +311,14 @@ namespace Regressors
 			};
 
 			template <class... ModifierFunctionTypes>
-			static Regressor<T> Train(std::vector<col_vector<T>> const& inputExamples,
+			static impl<RandomForestRegression, ModifierFunctionTypes...> Train(std::vector<SampleType> const& inputExamples,
 				std::vector<T> const& targetExamples,
 				OneShotTrainingParams const& regressionTrainingParams,
 				std::vector<T>& OutOfBagValues,
 				T const& trainingError,
 				std::tuple<ModifierFunctionTypes...> const& modifierFunctions);
 
-			static unsigned IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+			static size_t IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 				std::vector<OneShotTrainingParams>& regressionParamSets);
 
 			template <size_t TotalNumParams>
@@ -330,7 +327,7 @@ namespace Regressors
 				std::vector<bool>& isIntegerParam,
 				FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned& paramsOffset);
+				size_t& paramsOffset);
 
 			template <size_t TotalNumParams>
 			static void ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,

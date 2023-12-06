@@ -5,24 +5,12 @@
 
 namespace Regressors
 {
-	template <typename T>
-	class Regressor;
-	enum class CrossValidationMetric;
-	class RegressorTrainer;
-
 	namespace ModifierTypes
 	{
 		DECLARE_ENUM(ModifierTypes,
 			normaliser,
 			inputPCA,
 			featureSelection);
-
-		template <typename T>
-		class NormaliserModifier;
-		template <typename T>
-		class FeatureSelectionModifier;
-		template <typename T>
-		class InputPCAModifier;
 
 		class ModifierComponentBase
 		{
@@ -34,12 +22,17 @@ namespace Regressors
 			public:
 				virtual ModifierTypes GetModifierType() const = 0;
 			};
+
+			template <class... ModifierCrossValidationTrainingTypes>
+			static void IterateModifiers(std::tuple<ModifierCrossValidationTrainingTypes...> const& modifiersCrossValidationTrainingParams,
+				std::vector<std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>>& modifierOneShotTrainingParamsToTry);
 		};
 
-		template <typename T>
+		template <typename SampleType>
 		class NormaliserModifier
 		{
 		public:
+			typedef typename SampleType::type T;
 			static ModifierTypes const ModifierTypeEnum;
 			static size_t const NumModifierParams;
 
@@ -74,83 +67,63 @@ namespace Regressors
 				FindMinGlobalTrainingParams();
 			};
 
-			class ModifierFunction
+			struct ModifierFunction
 			{
-			private:
-				dlib::vector_normalizer<col_vector<T>> Normaliser;
-				OneShotTrainingParams TrainedParams;
-			public:
 				typedef NormaliserModifier ModifierType;
 
-				ModifierFunction() = default;
-				ModifierFunction(OneShotTrainingParams const& oneShotParams,
-					std::vector<col_vector<T>> const& inputExamples,
-					std::vector<T> const& targetExamples);
+				OneShotTrainingParams TrainingParams;
 
-				void Modify(col_vector<T>& input) const;
+				dlib::vector_normalizer<SampleType> Normaliser;
 
-				OneShotTrainingParams const& GetTrainedParams() const;
+				void operator()(SampleType& input) const;
 
 				friend void serialize(ModifierFunction const& item, std::ostream& out)
 				{
+					serialize(item.TrainingParams, out);
 					dlib::serialize(item.Normaliser, out);
-					serialize(item.TrainedParams, out);
 				}
 
 				friend void deserialize(ModifierFunction& item, std::istream& in)
 				{
+					deserialize(item.TrainingParams, in);
 					dlib::deserialize(item.Normaliser, in);
-					deserialize(item.TrainedParams, in);
 				}
 			};
 
-			template <size_t I = 0, class func, class... ModifierCrossValidationTrainingTypes, class... ModifierOneShotTrainingTypes>
-			static void IterateModifierParams(func callback,
-				std::tuple<ModifierCrossValidationTrainingTypes...> const& modifierCrossValidationParams,
-				std::tuple<ModifierOneShotTrainingTypes...> const& modifierOneShotParams)
-			{
-				OneShotTrainingParams iteratedParams;
-				auto expandedTuple = std::tuple_cat(modifierOneShotParams, std::make_tuple(iteratedParams));
-				if constexpr (sizeof...(ModifierCrossValidationTrainingTypes) == I + 1)
-				{
-					callback(expandedTuple);
-				}
-				else
-				{
-					using ModifierType = typename std::tuple_element<I + 1, std::tuple<ModifierCrossValidationTrainingTypes...>>::type::ModifierType;
-					ModifierType::IterateModifierParams<I + 1>(callback, modifierCrossValidationParams, expandedTuple);
-				}
-			}
+			static void TrainModifier(ModifierFunction& function, OneShotTrainingParams const& params, std::vector<SampleType> const& inputExamples, std::vector<T> const& targetExamples);
 
-			template <typename T, size_t TotalNumParams>
-			static void ConfigureModifierMapping(std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap, unsigned const offset, FindMinGlobalTrainingParams const& params)
-			{
+			template <size_t I, class... ModifierCrossValidationTrainingTypes>
+			static void IterateModifierParams(std::tuple<ModifierCrossValidationTrainingTypes...> const& modifierCrossValidationParams,
+				std::vector<std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>>& modifierOneShotTrainingParamsToTry,
+				std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>& modifierTrainingParams);
 
-			}
+			template <size_t TotalNumParams>
+			static void ConfigureModifierMapping(std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap, size_t const offset, FindMinGlobalTrainingParams const& params);
 
 			template <size_t TotalNumParams>
 			static void PackageParameters(col_vector<T>& lowerParams,
 				col_vector<T>& upperParams,
 				std::vector<bool>& isIntegerParam,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset,
+				size_t const mapOffset,
+				size_t& paramsOffset,
 				FindMinGlobalTrainingParams const& fmgTrainingParams);
 
-			template <size_t TotalNumParams>
-			static void UnpackParameters(OneShotTrainingParams& osTrainingParams,
+			template <size_t I, size_t TotalNumParams, class... ModifierOneShotTrainingParams>
+			static void UnpackParameters(std::tuple<ModifierOneShotTrainingParams...>& modifierOneShotTrainingParams,
 				col_vector<T> const& vecParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset);
+				size_t const mapOffset,
+				size_t& paramsOffset);
 
-			static unsigned NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
+			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
-		template <typename T>
+		template <typename SampleType>
 		class InputPCAModifier
 		{
 		public:
+			typedef typename SampleType::type T;
 			static const ModifierTypes ModifierTypeEnum;
 			static const size_t NumModifierParams;
 
@@ -191,92 +164,68 @@ namespace Regressors
 				FindMinGlobalTrainingParams();
 			};
 
-			class ModifierFunction
+			struct ModifierFunction
 			{
-			private:
-				PCA::PrincipalComponentAnalysis<col_vector<T>> PCAModel;
-				OneShotTrainingParams TrainedModifierParams;
-			public:
 				typedef InputPCAModifier ModifierType;
 
-				ModifierFunction() = default;
-				ModifierFunction(OneShotTrainingParams const& osTrainingParams, std::vector<col_vector<T>> const& inputExamples, std::vector<T> const& targetExamples);
+				OneShotTrainingParams TrainingParams;
 
-				void Modify(col_vector<T>& input) const;
+				PCA::PrincipalComponentAnalysis<SampleType> PCAModel;
 
-				OneShotTrainingParams const& GetTrainedParams() const;
+				void operator()(SampleType& input) const;
 
 				friend void serialize(ModifierFunction const& item, std::ostream& out)
 				{
+					serialize(item.TrainingParams, out);
 					serialize(item.PCAModel, out);
-					serialize(item.TrainedModifierParams, out);
 				}
 
 				friend void deserialize(ModifierFunction& item, std::istream& in)
 				{
+					deserialize(item.TrainingParams, in);
 					deserialize(item.PCAModel, in);
-					deserialize(item.TrainedModifierParams, in);
 				}
 			};
 
-			template <size_t I = 0, class func, class... ModifierCrossValidationTrainingTypes, class... ModifierOneShotTrainingTypes>
-			static void IterateModifierParams(func callback,
-				std::tuple<ModifierCrossValidationTrainingTypes...> const& modifierCrossValidationParams,
-				std::tuple<ModifierOneShotTrainingTypes...> const& modifierOneShotParams)
-			{
-				OneShotTrainingParams iteratedParams;
-				for (const auto& tv : std::get<I>(modifierCrossValidationParams).TargetVarianceToTry)
-				{
-					iteratedParams.TargetVariance = tv;
-					auto expandedTuple = std::tuple_cat(modifierOneShotParams, std::make_tuple(iteratedParams));
-					if constexpr (sizeof... (ModifierCrossValidationTrainingTypes) == I + 1)
-					{
-						callback(expandedTuple);
-					}
-					else
-					{
-						using ModifierType = typename std::tuple_element<I + 1, std::tuple<ModifierCrossValidationTrainingTypes...>>::type::ModifierType;
-						ModifierType::IterateModifierParams<I + 1>(callback, modifierCrossValidationParams, expandedTuple);
-					}
-				}
-			}
+			static void TrainModifier(ModifierFunction& function, OneShotTrainingParams const& params, std::vector<SampleType> const& inputExamples, std::vector<T> const& targetExamples);
 
-			template <typename T, size_t TotalNumParams>
-			static void ConfigureModifierMapping(std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap, unsigned const offset, FindMinGlobalTrainingParams const& params)
-			{
-				optimiseParamsMap[offset].first = params.LowerTargetVariance != params.UpperTargetVariance;
-				optimiseParamsMap[offset].second = params.LowerTargetVariance;
-			}
+			template <size_t I, class... ModifierCrossValidationTrainingTypes>
+			static void IterateModifierParams(std::tuple<ModifierCrossValidationTrainingTypes...> const& modifierCrossValidationParams,
+				std::vector<std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>>& modifierOneShotTrainingParamsToTry,
+				std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>& modifierTrainingParams);
+
+			template <size_t TotalNumParams>
+			static void ConfigureModifierMapping(std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap, size_t const offset, FindMinGlobalTrainingParams const& params);
 
 			template <size_t TotalNumParams>
 			static void PackageParameters(col_vector<T>& lowerParams,
 				col_vector<T>& upperParams,
 				std::vector<bool>& isIntegerParam,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset,
+				size_t const mapOffset,
+				size_t& paramsOffset,
 				FindMinGlobalTrainingParams const& fmgTrainingParams);
 
-			template <size_t TotalNumParams>
-			static void UnpackParameters(OneShotTrainingParams& osTrainingParams,
+			template <size_t I, size_t TotalNumParams, class... ModifierOneShotTrainingParams>
+			static void UnpackParameters(std::tuple<ModifierOneShotTrainingParams...>& modifierOneShotTrainingParams,
 				col_vector<T> const& vecParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset);
+				size_t const mapOffset,
+				size_t& paramsOffset);
 
-			static unsigned NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
+			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
-		template <typename T>
+		template <typename SampleType>
 		class FeatureSelectionModifier
 		{
 		public:
+			typedef typename SampleType::type T;
 			static const ModifierTypes ModifierTypeEnum;
 			static const size_t NumModifierParams;
 
 			struct OneShotTrainingParams : public ModifierComponentBase::ModifierOneShotTrainingParamsBase
 			{
-				friend class FeatureSelectionModifier;
 				typedef FeatureSelectionModifier ModifierType;
 				T FeatureFraction;
 
@@ -312,99 +261,74 @@ namespace Regressors
 				FindMinGlobalTrainingParams();
 			};
 
-			class ModifierFunction
+			struct ModifierFunction
 			{
-			private:
-				std::vector<size_t> FeatureIndices;
-				OneShotTrainingParams TrainedParams;
-
-				static std::vector<size_t> GetOrderedCorrelationIndices(std::vector<col_vector<T>> const& inputExamples,
-					std::vector<T> const& targetExamples,
-					T const& featureFraction);
-
-			public:
 				typedef FeatureSelectionModifier ModifierType;
 
-				ModifierFunction() = default;
-				ModifierFunction(OneShotTrainingParams const& osParams, std::vector<col_vector<T>> const& inputExamples, std::vector<T> const& targetExamples);
+				OneShotTrainingParams TrainingParams;
 
-				void Modify(col_vector<T>& input) const;
+				std::vector<size_t> FeatureIndices;
 
-				OneShotTrainingParams const& GetTrainedParams() const;
+				void operator()(SampleType& input) const;
 
 				friend void serialize(ModifierFunction const& item, std::ostream& out)
 				{
+					serialize(item.TrainingParams, out);
 					dlib::serialize(item.FeatureIndices, out);
-					serialize(item.TrainedParams, out);
 				}
 
 				friend void deserialize(ModifierFunction& item, std::istream& in)
 				{
+					deserialize(item.TrainingParams, in);
 					dlib::deserialize(item.FeatureIndices, in);
-					deserialize(item.TrainedParams, in);
 				}
 			};
 
-			template <size_t I = 0, class func, class... ModifierCrossValidationTrainingTypes, class... ModifierOneShotTrainingTypes>
-			static void IterateModifierParams(func callback,
-				std::tuple<ModifierCrossValidationTrainingTypes...> const& modifierCrossValidationParams,
-				std::tuple<ModifierOneShotTrainingTypes...> const& modifierOneShotParams)
-			{
-				OneShotTrainingParams iteratedParams;
-				for (const auto& ff : std::get<I>(modifierCrossValidationParams).FeatureFractionsToTry)
-				{
-					iteratedParams.FeatureFraction = ff;
-					auto expandedTuple = std::tuple_cat(modifierOneShotParams, std::make_tuple(iteratedParams));
-					if constexpr (sizeof...(ModifierCrossValidationTrainingTypes) == I + 1)
-					{
-						callback(expandedTuple);
-					}
-					else
-					{
-						using ModifierType = typename std::tuple_element<I + 1, std::tuple<ModifierCrossValidationTrainingTypes...>>::type::ModifierType;
-						ModifierType::IterateModifierParams<I + 1>(callback, modifierCrossValidationParams, expandedTuple);
-					}
-				}
-			}
+			static void TrainModifier(ModifierFunction& function, OneShotTrainingParams const& params, std::vector<SampleType> const& inputExamples, std::vector<T> const& targetExamples);
 
-			template <typename T, size_t TotalNumParams>
-			static void ConfigureModifierMapping(std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap, unsigned const offset, FindMinGlobalTrainingParams const& fmgParams)
-			{
-				optimiseParamsMap[offset].first = fmgParams.LowerFeatureFraction != fmgParams.UpperFeatureFraction;
-				optimiseParamsMap[offset].second = fmgParams.LowerFeatureFraction;
-			}
+			static std::vector<size_t> GetOrderedCorrelationIndices(std::vector<SampleType> const& inputExamples,
+				std::vector<T> const& targetExamples,
+				T const& featureFraction);
+
+			template <size_t I, class... ModifierCrossValidationTrainingTypes>
+			static void IterateModifierParams(std::tuple<ModifierCrossValidationTrainingTypes...> const& modifierCrossValidationParams,
+				std::vector<std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>>& modifierOneShotTrainingParamsToTry,
+				std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>& modifierTrainingParams);
+
+			template <size_t TotalNumParams>
+			static void ConfigureModifierMapping(std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap, size_t const offset, FindMinGlobalTrainingParams const& fmgParams);
 
 			template <size_t TotalNumParams>
 			static void PackageParameters(col_vector<T>& lowerParams,
 				col_vector<T>& upperParams,
 				std::vector<bool>& isIntegerParam,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset,
+				size_t const mapOffset,
+				size_t& paramsOffset,
 				FindMinGlobalTrainingParams const& fmgTrainingParams);
 
-			template <size_t TotalNumParams>
-			static void UnpackParameters(OneShotTrainingParams& osParams,
+			template <size_t I, size_t TotalNumParams, class... ModifierOneShotTrainingParams>
+			static void UnpackParameters(std::tuple<ModifierOneShotTrainingParams...>& modifierOneShotTrainingParams,
 				col_vector<T> const& vecParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset);
+				size_t const mapOffset,
+				size_t& paramsOffset);
 
-			static unsigned NumCrossValidationPermutations(const CrossValidationTrainingParams& cvParams);
+			static size_t NumCrossValidationPermutations(const CrossValidationTrainingParams& cvParams);
 		};
 
-		template <typename T>
-		size_t const NormaliserModifier<T>::NumModifierParams = 0ull;
-		template <typename T>
-		ModifierTypes const NormaliserModifier<T>::ModifierTypeEnum = ModifierTypes::normaliser;
-		template <typename T>
-		size_t const InputPCAModifier<T>::NumModifierParams = 1ull;
-		template <typename T>
-		ModifierTypes const InputPCAModifier<T>::ModifierTypeEnum = ModifierTypes::inputPCA;
-		template <typename T>
-		size_t const FeatureSelectionModifier<T>::NumModifierParams = 1ull;
-		template <typename T>
-		ModifierTypes const FeatureSelectionModifier<T>::ModifierTypeEnum = ModifierTypes::featureSelection;
+		template <typename SampleType>
+		size_t const NormaliserModifier<SampleType>::NumModifierParams = 0ull;
+		template <typename SampleType>
+		ModifierTypes const NormaliserModifier<SampleType>::ModifierTypeEnum = ModifierTypes::normaliser;
+		template <typename SampleType>
+		size_t const InputPCAModifier<SampleType>::NumModifierParams = 1ull;
+		template <typename SampleType>
+		ModifierTypes const InputPCAModifier<SampleType>::ModifierTypeEnum = ModifierTypes::inputPCA;
+		template <typename SampleType>
+		size_t const FeatureSelectionModifier<SampleType>::NumModifierParams = 1ull;
+		template <typename SampleType>
+		ModifierTypes const FeatureSelectionModifier<SampleType>::ModifierTypeEnum = ModifierTypes::featureSelection;
 	}
 }
 

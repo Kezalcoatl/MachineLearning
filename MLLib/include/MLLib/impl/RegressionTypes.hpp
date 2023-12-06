@@ -4,14 +4,14 @@ namespace Regressors
 {
 	namespace RegressionTypes
 	{
-		template <class RegressionType, size_t I, class... ModifierOneShotTrainingParamsTypes, class... ModifierFunctionTypes>
-		static Regressor<typename RegressionType::T> RegressionComponentBase::TrainModifiersAndRegressor(std::vector<col_vector<typename RegressionType::T>> const& inputExamples,
-			std::vector<typename RegressionType::T> const& targetExamples,
+		template <class RegressionType, size_t I, class... ModifierOneShotTrainingParamsTypes>
+		static impl<RegressionType, typename ModifierOneShotTrainingParamsTypes::ModifierType::ModifierFunction...> RegressionComponentBase::TrainModifiersAndRegressor(std::vector<typename RegressionType::SampleType> const& inputExamples,
+			std::vector<typename RegressionType::SampleType::type> const& targetExamples,
 			typename RegressionType::OneShotTrainingParams const& regressionParams,
-			std::vector<typename RegressionType::T>& diagnostics,
-			typename RegressionType::T const& trainingError,
+			std::vector<typename RegressionType::SampleType::type>& diagnostics,
+			typename RegressionType::SampleType::type const& trainingError,
 			std::tuple<ModifierOneShotTrainingParamsTypes...> const& modifierOneShotParams,
-			std::tuple<ModifierFunctionTypes...> const& modifierFunctions)
+			std::tuple<typename ModifierOneShotTrainingParamsTypes::ModifierType::ModifierFunction...>& modifierFunctions)
 		{
 			if constexpr (I == sizeof...(ModifierOneShotTrainingParamsTypes))
 			{
@@ -19,56 +19,31 @@ namespace Regressors
 					targetExamples,
 					regressionParams,
 					diagnostics,
-					trainingError, 
+					trainingError,
 					modifierFunctions);
 			}
 			else
 			{
-				using ModifierFunctionType = typename std::tuple_element<I, std::tuple<ModifierOneShotTrainingParamsTypes...>>::type::ModifierType::ModifierFunction;
-				auto modifier = ModifierFunctionType(std::get<I>(modifierOneShotParams), inputExamples, targetExamples);
-				auto extendedModifierFunctions = std::tuple_cat(modifierFunctions, std::make_tuple(modifier));
+				using ModifierType = typename std::tuple_element<I, std::tuple<ModifierOneShotTrainingParamsTypes...>>::type::ModifierType;
+				auto& modifier = std::get<I>(modifierFunctions);
+				auto const& params = std::get<I>(modifierOneShotParams);
+				ModifierType::TrainModifier(modifier, params, inputExamples, targetExamples);
 				auto examples(inputExamples);
 				for (auto& example : examples)
 				{
-					modifier.Modify(example);
+					modifier(example);
 				}
-				return TrainModifiersAndRegressor<RegressionType, I + 1>(examples, targetExamples, regressionParams, diagnostics, trainingError, modifierOneShotParams, extendedModifierFunctions);
+				return TrainModifiersAndRegressor<RegressionType, I + 1>(examples, targetExamples, regressionParams, diagnostics, trainingError, modifierOneShotParams, modifierFunctions);
 			}
 		}
 
 		template <class RegressionType, class... ModifierFunctionTypes>
-		static Regressor<typename RegressionType::T> RegressionComponentBase::MakeRegressor(typename RegressionType::DecisionFunction const& function,
+		static impl<RegressionType, ModifierFunctionTypes...> RegressionComponentBase::MakeRegressor(typename RegressionType::DecisionFunction const& function,
 			std::tuple<ModifierFunctionTypes...> const& modifiers,
-			typename RegressionType::T const& trainingError,
+			typename RegressionType::SampleType::type const& trainingError,
 			typename RegressionType::OneShotTrainingParams const& regressorTrainingParams)
 		{
-			typedef typename RegressionType::T T;
-			typedef Regressor<T>::template impl<RegressionType, ModifierFunctionTypes...> implType;
-			Regressor<T> ret;
-			ret.m_impl = std::make_unique<implType>(function, modifiers, trainingError, regressorTrainingParams);
-			return ret;
-		}
-
-		template <class RegressionType, class... ModifierOneShotTrainingTypes>
-		static Regressor<typename RegressionType::T> RegressionComponentBase::Train(std::vector<col_vector<typename RegressionType::T>> const& inputExamples,
-			std::vector<typename RegressionType::T> const& targetExamples,
-			std::string const& randomSeed,
-			ModifierOneShotTrainingTypes const&... modifierOneShotParams)
-		{
-			auto inputs(inputExamples);
-			auto targets(targetExamples);
-			if (randomSeed.empty())
-			{
-				dlib::randomize_samples(inputs, targets);
-			}
-			else
-			{
-				const auto rnd = dlib::rand(randomSeed);
-				dlib::randomize_samples(inputs, targets, rnd);
-			}
-			std::tuple<ModifierOneShotTrainingTypes...> modifierOneShotParamsTuple;
-			std::tuple<> modifierFunctions;
-			return TrainModifiersAndRegressor<RegressionType>(inputs, targets, modifierOneShotParamsTuple, modifierFunctions);
+			return impl<RegressionType, ModifierFunctionTypes...>(function, modifiers, trainingError, regressorTrainingParams);
 		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -83,7 +58,7 @@ namespace Regressors
 		template <class KernelType> template <size_t TotalNumParams>
 		KernelRidgeRegression<KernelType>::OneShotTrainingParams::OneShotTrainingParams(col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[0].first)
 			{
@@ -131,7 +106,7 @@ namespace Regressors
 		}
 
 		template <class KernelType> template <class... ModifierFunctionTypes>
-		static Regressor<typename KernelType::T> KernelRidgeRegression<KernelType>::Train(std::vector<col_vector<T>> const& inputExamples,
+		static impl<KernelRidgeRegression<KernelType>, ModifierFunctionTypes...> KernelRidgeRegression<KernelType>::Train(std::vector<SampleType> const& inputExamples,
 			std::vector<T> const& targetExamples,
 			OneShotTrainingParams const& regressionTrainingParams,
 			std::vector<T>& LeaveOneOutValues,
@@ -146,7 +121,7 @@ namespace Regressors
 		}
 
 		template <class KernelType>
-		unsigned KernelRidgeRegression<KernelType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+		size_t KernelRidgeRegression<KernelType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 			std::vector<OneShotTrainingParams>& regressionParamSets)
 		{
 			DLIB_ASSERT(regressionCrossValidationTrainingParams.MaxBasisFunctionsToTry.size() > 0 && regressionCrossValidationTrainingParams.LambdaToTry.size() > 0,
@@ -171,7 +146,7 @@ namespace Regressors
 			std::vector<bool>& isIntegerParam,
 			FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[0].first)
 			{
@@ -215,7 +190,7 @@ namespace Regressors
 		template <class KernelType> template <size_t TotalNumParams>
 		SupportVectorRegression<KernelType>::OneShotTrainingParams::OneShotTrainingParams(col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[0].first)
 			{
@@ -287,7 +262,7 @@ namespace Regressors
 		}
 
 		template <class KernelType> template <class... ModifierFunctionTypes>
-		static Regressor<typename KernelType::T> SupportVectorRegression<KernelType>::Train(std::vector<col_vector<T>> const& inputExamples,
+		static impl<SupportVectorRegression<KernelType>, ModifierFunctionTypes...> SupportVectorRegression<KernelType>::Train(std::vector<SampleType> const& inputExamples,
 			std::vector<T> const& targetExamples,
 			OneShotTrainingParams const& regressionTrainingParams,
 			std::vector<T>& Residuals,
@@ -310,7 +285,7 @@ namespace Regressors
 		}
 
 		template <class KernelType>
-		unsigned SupportVectorRegression<KernelType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+		size_t SupportVectorRegression<KernelType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 			std::vector<OneShotTrainingParams>& regressionParamSets)
 		{
 			DLIB_ASSERT(regressionCrossValidationTrainingParams.CToTry.size() > 0 && regressionCrossValidationTrainingParams.EpsilonToTry.size() > 0 && regressionCrossValidationTrainingParams.EpsilonInsensitivityToTry.size() > 0 && regressionCrossValidationTrainingParams.CacheSizeToTry.size() > 0,
@@ -343,7 +318,7 @@ namespace Regressors
 			std::vector<bool>& isIntegerParam,
 			FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[0].first)
 			{
@@ -404,7 +379,7 @@ namespace Regressors
 		template <class ExtractorType> template <size_t TotalNumParams>
 		RandomForestRegression<ExtractorType>::OneShotTrainingParams::OneShotTrainingParams(col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[0].first)
 			{
@@ -464,7 +439,7 @@ namespace Regressors
 		}
 
 		template <class ExtractorType> template <class... ModifierFunctionTypes>
-		static Regressor<typename ExtractorType::T> RandomForestRegression<ExtractorType>::Train(std::vector<col_vector<T>> const& inputExamples,
+		static impl<RandomForestRegression<ExtractorType>, ModifierFunctionTypes...> RandomForestRegression<ExtractorType>::Train(std::vector<SampleType> const& inputExamples,
 			std::vector<T> const& targetExamples,
 			OneShotTrainingParams const& regressionTrainingParams,
 			std::vector<T>& OutOfBagValues,
@@ -480,7 +455,7 @@ namespace Regressors
 		}
 
 		template <class ExtractorType>
-		unsigned RandomForestRegression<ExtractorType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+		size_t RandomForestRegression<ExtractorType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 			std::vector<OneShotTrainingParams>& regressionParamSets)
 		{
 			DLIB_ASSERT(regressionCrossValidationTrainingParams.NumTreesToTry.size() > 0 && regressionCrossValidationTrainingParams.MinSamplesPerLeafToTry.size() > 0 && regressionCrossValidationTrainingParams.SubsamplingFractionToTry.size() > 0,
@@ -512,7 +487,7 @@ namespace Regressors
 			std::vector<bool>& isIntegerParam,
 			FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[0].first)
 			{

@@ -7,12 +7,13 @@ namespace Regressors
 {
 	namespace KernelTypes
 	{
-		template <typename T>
+		template <typename SampleType>
 		class LinearKernel
 		{
 		public:
-			typedef T T;
-			typedef typename dlib::linear_kernel<col_vector<T>> KernelFunctionType;
+			typedef SampleType SampleType;
+			typedef typename SampleType::type T;
+			typedef typename dlib::linear_kernel<SampleType> KernelFunctionType;
 
 			LinearKernel() = delete;
 
@@ -49,37 +50,38 @@ namespace Regressors
 				std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets);
 
 			template <size_t TotalNumParams>
-			static void PackageParameters(unsigned const mapOffset,
+			static void PackageParameters(size_t const mapOffset,
 				col_vector<T>& lowerBound,
 				col_vector<T>& upperBound,
 				std::vector<bool>& isIntegerParam,
 				FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned& paramsOffset);
+				size_t& paramsOffset);
 
 			template <size_t TotalNumParams>
 			static void ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-				unsigned const mapOffset);
+				size_t const mapOffset);
 
 			template <size_t TotalNumParams>
 			static void UnpackParameters(OneShotTrainingParams& osTrainingParams,
 				col_vector<T> const& vecParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset);
+				size_t const mapOffset,
+				size_t& paramsOffset);
 
-			static unsigned NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
+			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		template <typename T>
+		template <typename SampleType>
 		class PolynomialKernel
 		{
 		public:
-			typedef T T;
-			typedef typename dlib::polynomial_kernel<col_vector<T>> KernelFunctionType;
+			typedef SampleType SampleType;
+			typedef typename SampleType::type T;
+			typedef typename dlib::polynomial_kernel<SampleType> KernelFunctionType;
 
 			PolynomialKernel() = delete;
 
@@ -137,37 +139,38 @@ namespace Regressors
 				std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets);
 
 			template <size_t TotalNumParams>
-			static void PackageParameters(unsigned const mapOffset,
+			static void PackageParameters(size_t const mapOffset,
 				col_vector<T>& lowerBound,
 				col_vector<T>& upperBound,
 				std::vector<bool>& isIntegerParam,
 				FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned& paramsOffset);
+				size_t& paramsOffset);
 
 			template <size_t TotalNumParams>
 			static void ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-				unsigned const mapOffset);
+				size_t const mapOffset);
 
 			template <size_t TotalNumParams>
 			static void UnpackParameters(OneShotTrainingParams& osTrainingParams,
 				col_vector<T> const& vecParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset);
+				size_t const mapOffset,
+				size_t& paramsOffset);
 
-			static unsigned NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
+			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		template <typename T>
+		template <typename SampleType>
 		class RadialBasisKernel
 		{
 		public:
-			typedef T T;
-			typedef typename dlib::radial_basis_kernel<col_vector<T>> KernelFunctionType;
+			typedef SampleType SampleType;
+			typedef typename SampleType::type T;
+			typedef typename dlib::radial_basis_kernel<SampleType> KernelFunctionType;
 
 			RadialBasisKernel() = delete;
 
@@ -213,37 +216,38 @@ namespace Regressors
 				std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets);
 
 			template <size_t TotalNumParams>
-			static void PackageParameters(unsigned const mapOffset,
+			static void PackageParameters(size_t const mapOffset,
 				col_vector<T>& lowerBound,
 				col_vector<T>& upperBound,
 				std::vector<bool>& isIntegerParam,
 				FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned& paramsOffset);
+				size_t& paramsOffset);
 
 			template <size_t TotalNumParams>
 			static void ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-				unsigned const mapOffset);
+				size_t const mapOffset);
 
 			template <size_t TotalNumParams>
 			static void UnpackParameters(OneShotTrainingParams& osTrainingParams,
 				col_vector<T> const& vecParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset);
+				size_t const mapOffset,
+				size_t& paramsOffset);
 
-			static unsigned NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
+			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		template <typename T>
+		template <typename SampleType>
 		class SigmoidKernel
 		{
 		public:
-			typedef T T;
-			typedef typename dlib::sigmoid_kernel<col_vector<T>> KernelFunctionType;
+			typedef SampleType SampleType;
+			typedef typename SampleType::type T;
+			typedef typename dlib::sigmoid_kernel<SampleType> KernelFunctionType;
 
 			SigmoidKernel() = delete;
 
@@ -295,36 +299,37 @@ namespace Regressors
 				std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets);
 
 			template <size_t TotalNumParams>
-			static void PackageParameters(unsigned const mapOffset,
+			static void PackageParameters(size_t const mapOffset,
 				col_vector<T>& lowerBound,
 				col_vector<T>& upperBound,
 				std::vector<bool>& isIntegerParam,
 				FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned& paramsOffset);
+				size_t& paramsOffset);
 
 			template <size_t TotalNumParams>
 			static void ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-				unsigned const mapOffset);
+				size_t const mapOffset);
 
 			template <size_t TotalNumParams>
 			static void UnpackParameters(OneShotTrainingParams& osTrainingParams,
 				col_vector<T> const& vecParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset);
+				size_t const mapOffset,
+				size_t& paramsOffset);
 
-			static unsigned NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
+			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		template <typename T>
+		template <typename SampleType>
 		class DenseExtractor
 		{
 		public:
-			typedef T T;
+			typedef SampleType SampleType;
+			typedef typename SampleType::type T;
 			typedef typename dlib::dense_feature_extractor ExtractorFunctionType;
 
 			DenseExtractor() = delete;
@@ -362,27 +367,27 @@ namespace Regressors
 				std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets);
 
 			template <size_t TotalNumParams>
-			static void PackageParameters(unsigned const mapOffset,
+			static void PackageParameters(size_t const mapOffset,
 				col_vector<T>& lowerBound,
 				col_vector<T>& upperBound,
 				std::vector<bool>& isIntegerParam,
 				FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned& paramsOffset);
+				size_t& paramsOffset);
 
 			template <size_t TotalNumParams>
 			static void ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 				std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-				unsigned const mapOffset);
+				size_t const mapOffset);
 
 			template <size_t TotalNumParams>
 			static void UnpackParameters(OneShotTrainingParams& osTrainingParams,
 				col_vector<T> const& vecParams,
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-				unsigned const mapOffset,
-				unsigned& paramsOffset);
+				size_t const mapOffset,
+				size_t& paramsOffset);
 
-			static unsigned NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
+			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		template <typename T>

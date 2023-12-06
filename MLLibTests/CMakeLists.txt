@@ -10,6 +10,7 @@ set(test_sources
 	CrossValidationRegressorTests.cpp
 	FindMinGlobalRegressorTests.cpp
 	RegressorTests.cpp
+	RegressorWrapperTests.cpp
 )
 
 add_executable(RegressorTests ${test_sources})

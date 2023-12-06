@@ -4,79 +4,79 @@ namespace Regressors
 {
 	namespace KernelTypes
 	{
-		template <typename T>
-		LinearKernel<T>::OneShotTrainingParams::OneShotTrainingParams()
+		template <typename SampleType>
+		LinearKernel<SampleType>::OneShotTrainingParams::OneShotTrainingParams()
 		{
 			static_assert(std::is_floating_point<T>::value, "T must be a floating point type.");
 		}
 
-		template <typename T>
-		LinearKernel<T>::CrossValidationTrainingParams::CrossValidationTrainingParams()
+		template <typename SampleType>
+		LinearKernel<SampleType>::CrossValidationTrainingParams::CrossValidationTrainingParams()
 		{
 		}
 
-		template <typename T>
-		LinearKernel<T>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
+		template <typename SampleType>
+		LinearKernel<SampleType>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
 		{
 		}
 
-		template <typename T>
-		typename LinearKernel<T>::KernelFunctionType LinearKernel<T>::GetKernel(OneShotTrainingParams const& osParams)
+		template <typename SampleType>
+		typename LinearKernel<SampleType>::KernelFunctionType LinearKernel<SampleType>::GetKernel(OneShotTrainingParams const& osParams)
 		{
 			return KernelFunctionType();
 		}
 
-		template <typename T> template <class RegressionType>
-		static void LinearKernel<T>::IterateKernelParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
+		template <typename SampleType> template <class RegressionType>
+		static void LinearKernel<SampleType>::IterateKernelParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
 			CrossValidationTrainingParams const& kernelCrossValidationTrainingParams,
 			std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets)
 		{
 			regressionParamSets.emplace_back(regressionOneShotTrainingParams);
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void LinearKernel<T>::PackageParameters(unsigned const mapOffset,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void LinearKernel<SampleType>::PackageParameters(size_t const mapOffset,
 			col_vector<T>& lowerBound,
 			col_vector<T>& upperBound,
 			std::vector<bool>& isIntegerParam,
 			FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void LinearKernel<T>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void LinearKernel<SampleType>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-			unsigned const mapOffset)
+			size_t const mapOffset)
 		{
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void LinearKernel<T>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void LinearKernel<SampleType>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
 			col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned const mapOffset,
-			unsigned& paramsOffset)
+			size_t const mapOffset,
+			size_t& paramsOffset)
 		{
 		}
 
-		template <typename T>
-		unsigned LinearKernel<T>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
+		template <typename SampleType>
+		size_t LinearKernel<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
 		{
 			return 1u;
 		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		template <typename T>
-		PolynomialKernel<T>::OneShotTrainingParams::OneShotTrainingParams() : Gamma(1.0), Coeff(0.0), Degree(1.0)
+		template <typename SampleType>
+		PolynomialKernel<SampleType>::OneShotTrainingParams::OneShotTrainingParams() : Gamma(1.0), Coeff(0.0), Degree(1.0)
 		{
 			static_assert(std::is_floating_point<T>::value);
 		}
 
-		template <typename T>
-		PolynomialKernel<T>::CrossValidationTrainingParams::CrossValidationTrainingParams()
+		template <typename SampleType>
+		PolynomialKernel<SampleType>::CrossValidationTrainingParams::CrossValidationTrainingParams()
 		{
 			OneShotTrainingParams temp;
 			GammaToTry = { temp.Gamma };
@@ -84,8 +84,8 @@ namespace Regressors
 			DegreeToTry = { temp.Degree };
 		}
 
-		template <typename T>
-		PolynomialKernel<T>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
+		template <typename SampleType>
+		PolynomialKernel<SampleType>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
 		{
 			OneShotTrainingParams temp;
 			LowerGamma = temp.Gamma;
@@ -96,14 +96,14 @@ namespace Regressors
 			UpperDegree = temp.Degree;
 		}
 
-		template <typename T>
-		typename PolynomialKernel<T>::KernelFunctionType PolynomialKernel<T>::GetKernel(OneShotTrainingParams const& osTrainingParams)
+		template <typename SampleType>
+		typename PolynomialKernel<SampleType>::KernelFunctionType PolynomialKernel<SampleType>::GetKernel(OneShotTrainingParams const& osTrainingParams)
 		{
 			return KernelFunctionType(osTrainingParams.Gamma, osTrainingParams.Coeff, osTrainingParams.Degree);
 		}
 
-		template <typename T> template <class RegressionType>
-		static void PolynomialKernel<T>::IterateKernelParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
+		template <typename SampleType> template <class RegressionType>
+		static void PolynomialKernel<SampleType>::IterateKernelParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
 			CrossValidationTrainingParams const& kernelCrossValidationTrainingParams,
 			std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets)
 		{
@@ -124,14 +124,14 @@ namespace Regressors
 			}
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void PolynomialKernel<T>::PackageParameters(unsigned const mapOffset,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void PolynomialKernel<SampleType>::PackageParameters(size_t const mapOffset,
 			col_vector<T>& lowerBound,
 			col_vector<T>& upperBound,
 			std::vector<bool>& isIntegerParam,
 			FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[mapOffset].first)
 			{
@@ -156,10 +156,10 @@ namespace Regressors
 			}
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void PolynomialKernel<T>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void PolynomialKernel<SampleType>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-			unsigned const mapOffset)
+			size_t const mapOffset)
 		{
 			optimiseParamsMap[mapOffset].first = fmgTrainingParams.LowerGamma != fmgTrainingParams.UpperGamma;
 			optimiseParamsMap[mapOffset].second = fmgTrainingParams.LowerGamma;
@@ -169,12 +169,12 @@ namespace Regressors
 			optimiseParamsMap[mapOffset + 2].second = fmgTrainingParams.LowerDegree;
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void PolynomialKernel<T>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void PolynomialKernel<SampleType>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
 			col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned const mapOffset,
-			unsigned& paramsOffset)
+			size_t const mapOffset,
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[mapOffset].first)
 			{
@@ -205,43 +205,43 @@ namespace Regressors
 			}
 		}
 
-		template <typename T>
-		unsigned PolynomialKernel<T>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
+		template <typename SampleType>
+		size_t PolynomialKernel<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
 		{
 			return cvTrainingParams.GammaToTry.size() * cvTrainingParams.CoeffToTry.size() * cvTrainingParams.DegreeToTry.size();
 		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		template <typename T>
-		RadialBasisKernel<T>::OneShotTrainingParams::OneShotTrainingParams() : Gamma(1.0)
+		template <typename SampleType>
+		RadialBasisKernel<SampleType>::OneShotTrainingParams::OneShotTrainingParams() : Gamma(1.0)
 		{
 			static_assert(std::is_floating_point<T>::value);
 		}
 
-		template <typename T>
-		RadialBasisKernel<T>::CrossValidationTrainingParams::CrossValidationTrainingParams()
+		template <typename SampleType>
+		RadialBasisKernel<SampleType>::CrossValidationTrainingParams::CrossValidationTrainingParams()
 		{
 			OneShotTrainingParams temp;
 			GammaToTry = { temp.Gamma };
 		}
 
-		template <typename T>
-		RadialBasisKernel<T>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
+		template <typename SampleType>
+		RadialBasisKernel<SampleType>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
 		{
 			OneShotTrainingParams temp;
 			LowerGamma = temp.Gamma;
 			UpperGamma = temp.Gamma;
 		}
 
-		template <typename T>
-		typename RadialBasisKernel<T>::KernelFunctionType RadialBasisKernel<T>::GetKernel(OneShotTrainingParams const& osTrainingParams)
+		template <typename SampleType>
+		typename RadialBasisKernel<SampleType>::KernelFunctionType RadialBasisKernel<SampleType>::GetKernel(OneShotTrainingParams const& osTrainingParams)
 		{
 			return KernelFunctionType(osTrainingParams.Gamma);
 		}
 
-		template <typename T> template <class RegressionType>
-		static void RadialBasisKernel<T>::IterateKernelParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
+		template <typename SampleType> template <class RegressionType>
+		static void RadialBasisKernel<SampleType>::IterateKernelParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
 			CrossValidationTrainingParams const& kernelCrossValidationTrainingParams,
 			std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets)
 		{
@@ -254,14 +254,14 @@ namespace Regressors
 			}
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void RadialBasisKernel<T>::PackageParameters(unsigned const mapOffset,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void RadialBasisKernel<SampleType>::PackageParameters(size_t const mapOffset,
 			col_vector<T>& lowerBound,
 			col_vector<T>& upperBound,
 			std::vector<bool>& isIntegerParam,
 			FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[mapOffset].first)
 			{
@@ -272,21 +272,21 @@ namespace Regressors
 			}
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void RadialBasisKernel<T>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void RadialBasisKernel<SampleType>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-			unsigned const mapOffset)
+			size_t const mapOffset)
 		{
 			optimiseParamsMap[mapOffset].first = fmgTrainingParams.LowerGamma != fmgTrainingParams.UpperGamma;
 			optimiseParamsMap[mapOffset].second = fmgTrainingParams.LowerGamma;
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void RadialBasisKernel<T>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void RadialBasisKernel<SampleType>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
 			col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned const mapOffset,
-			unsigned& paramsOffset)
+			size_t const mapOffset,
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[mapOffset].first)
 			{
@@ -299,30 +299,30 @@ namespace Regressors
 			}
 		}
 
-		template <typename T>
-		unsigned RadialBasisKernel<T>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
+		template <typename SampleType>
+		size_t RadialBasisKernel<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
 		{
 			return cvTrainingParams.GammaToTry.size();
 		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		template <typename T>
-		SigmoidKernel<T>::OneShotTrainingParams::OneShotTrainingParams() : Gamma(1.0), Coeff(0.0)
+		template <typename SampleType>
+		SigmoidKernel<SampleType>::OneShotTrainingParams::OneShotTrainingParams() : Gamma(1.0), Coeff(0.0)
 		{
 			static_assert(std::is_floating_point<T>::value);
 		}
 
-		template <typename T>
-		SigmoidKernel<T>::CrossValidationTrainingParams::CrossValidationTrainingParams()
+		template <typename SampleType>
+		SigmoidKernel<SampleType>::CrossValidationTrainingParams::CrossValidationTrainingParams()
 		{
 			OneShotTrainingParams temp;
 			GammaToTry = { temp.Gamma };
 			CoeffToTry = { temp.Coeff };
 		}
 
-		template <typename T>
-		SigmoidKernel<T>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
+		template <typename SampleType>
+		SigmoidKernel<SampleType>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
 		{
 			OneShotTrainingParams temp;
 			LowerGamma = temp.Gamma;
@@ -331,14 +331,14 @@ namespace Regressors
 			UpperCoeff = temp.Coeff;
 		}
 
-		template <typename T>
-		typename SigmoidKernel<T>::KernelFunctionType SigmoidKernel<T>::GetKernel(OneShotTrainingParams const& osTrainingParams)
+		template <typename SampleType>
+		typename SigmoidKernel<SampleType>::KernelFunctionType SigmoidKernel<SampleType>::GetKernel(OneShotTrainingParams const& osTrainingParams)
 		{
 			return KernelFunctionType(osTrainingParams.Gamma, osTrainingParams.Coeff);
 		}
 
-		template <typename T> template <class RegressionType>
-		static void SigmoidKernel<T>::IterateKernelParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
+		template <typename SampleType> template <class RegressionType>
+		static void SigmoidKernel<SampleType>::IterateKernelParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
 			CrossValidationTrainingParams const& kernelCrossValidationTrainingParams,
 			std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets)
 		{
@@ -355,14 +355,14 @@ namespace Regressors
 			}
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void SigmoidKernel<T>::PackageParameters(unsigned const mapOffset,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void SigmoidKernel<SampleType>::PackageParameters(size_t const mapOffset,
 			col_vector<T>& lowerBound,
 			col_vector<T>& upperBound,
 			std::vector<bool>& isIntegerParam,
 			FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[mapOffset].first)
 			{
@@ -380,10 +380,10 @@ namespace Regressors
 			}
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void SigmoidKernel<T>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void SigmoidKernel<SampleType>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-			unsigned const mapOffset)
+			size_t const mapOffset)
 		{
 			optimiseParamsMap[mapOffset].first = fmgTrainingParams.LowerGamma != fmgTrainingParams.UpperGamma;
 			optimiseParamsMap[mapOffset].second = fmgTrainingParams.LowerGamma;
@@ -391,12 +391,12 @@ namespace Regressors
 			optimiseParamsMap[mapOffset + 1].second = fmgTrainingParams.LowerCoeff;
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void SigmoidKernel<T>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void SigmoidKernel<SampleType>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
 			col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned const mapOffset,
-			unsigned& paramsOffset)
+			size_t const mapOffset,
+			size_t& paramsOffset)
 		{
 			if (optimiseParamsMap[mapOffset].first)
 			{
@@ -418,73 +418,73 @@ namespace Regressors
 			}
 		}
 
-		template <typename T>
-		unsigned SigmoidKernel<T>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
+		template <typename SampleType>
+		size_t SigmoidKernel<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
 		{
 			return cvTrainingParams.GammaToTry.size() * cvTrainingParams.CoeffToTry.size();
 		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		template <typename T>
-		DenseExtractor<T>::OneShotTrainingParams::OneShotTrainingParams()
+		template <typename SampleType>
+		DenseExtractor<SampleType>::OneShotTrainingParams::OneShotTrainingParams()
 		{
 			static_assert(std::is_floating_point<T>::value);
 		}
 
-		template <typename T>
-		DenseExtractor<T>::CrossValidationTrainingParams::CrossValidationTrainingParams()
+		template <typename SampleType>
+		DenseExtractor<SampleType>::CrossValidationTrainingParams::CrossValidationTrainingParams()
 		{
 		}
 
-		template <typename T>
-		DenseExtractor<T>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
+		template <typename SampleType>
+		DenseExtractor<SampleType>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
 		{
 		}
 
-		template <typename T>
-		typename DenseExtractor<T>::ExtractorFunctionType DenseExtractor<T>::GetExtractor(OneShotTrainingParams const& osTrainingParams)
+		template <typename SampleType>
+		typename DenseExtractor<SampleType>::ExtractorFunctionType DenseExtractor<SampleType>::GetExtractor(OneShotTrainingParams const& osTrainingParams)
 		{
 			return ExtractorFunctionType();
 		}
 
-		template <typename T> template <class RegressionType>
-		static void DenseExtractor<T>::IterateExtractorParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
+		template <typename SampleType> template <class RegressionType>
+		static void DenseExtractor<SampleType>::IterateExtractorParams(typename RegressionType::OneShotTrainingParams& regressionOneShotTrainingParams,
 			CrossValidationTrainingParams const& extractorCrossValidationTrainingParams,
 			std::vector<typename RegressionType::OneShotTrainingParams>& regressionParamSets)
 		{
 			regressionParamSets.emplace_back(regressionOneShotTrainingParams);
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void DenseExtractor<T>::PackageParameters(unsigned const mapOffset,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void DenseExtractor<SampleType>::PackageParameters(size_t const mapOffset,
 			col_vector<T>& lowerBound,
 			col_vector<T>& upperBound,
 			std::vector<bool>& isIntegerParam,
 			FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned& paramsOffset)
+			size_t& paramsOffset)
 		{
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void DenseExtractor<T>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void DenseExtractor<SampleType>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
 			std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-			unsigned const mapOffset)
+			size_t const mapOffset)
 		{
 		}
 
-		template <typename T> template <size_t TotalNumParams>
-		static void DenseExtractor<T>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
+		template <typename SampleType> template <size_t TotalNumParams>
+		static void DenseExtractor<SampleType>::UnpackParameters(OneShotTrainingParams& osTrainingParams,
 			col_vector<T> const& vecParams,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned const mapOffset,
-			unsigned& paramsOffset)
+			size_t const mapOffset,
+			size_t& paramsOffset)
 		{
 		}
 
-		template <typename T>
-		unsigned DenseExtractor<T>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
+		template <typename SampleType>
+		size_t DenseExtractor<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
 		{
 			return 1u;
 		}

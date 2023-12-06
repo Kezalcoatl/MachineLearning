@@ -21,57 +21,76 @@ namespace Regressors
 
 	class RegressorTrainer
 	{
+		template <class RegressorType, class... ModifierFunctionTypes>
+		friend class impl;
+		template <typename SampleType>
+		friend class Regressor;
+		friend class RegressionComponentBase;
 	public:
 		struct RegressorError : public dlib::error
 		{
 			RegressorError(const std::string& message) : dlib::error(message) {}
 		};
 	private:
+		template <typename SampleType>
+		class impl_base
+		{
+			template <typename SampleType2>
+			friend void serialize(Regressor<SampleType2> const& item, std::ostream& out);
+		public:
+			typedef typename SampleType::type T;
+
+			virtual T Predict(SampleType input) const = 0;
+			virtual T const& GetTrainingError() const = 0;
+			virtual typename RegressionTypes::RegressionComponentBase::RegressionOneShotTrainingParamsBase const& GetTrainedRegressorParams() const = 0;
+			virtual constexpr size_t GetNumModifiers() const = 0;
+			virtual typename ModifierTypes::ModifierComponentBase::ModifierOneShotTrainingParamsBase const& GetTrainedModifierParams(size_t const index) const = 0;
+			virtual RegressionTypes::RegressorTypes const& GetRegressorType() const = 0;
+		protected:
+			virtual void Serialize(std::ostream& out) const = 0;
+
+			template <size_t I = 0, class... ModifierFunctionTypes>
+			static void SerializeModifiers(std::tuple<ModifierFunctionTypes...> const&, std::ostream& out);
+
+			template <size_t I = 0, class... ModifierFunctionTypes>
+			static typename ModifierTypes::ModifierComponentBase::ModifierOneShotTrainingParamsBase const& GetModifierTrainingParams(size_t const index,
+				std::tuple<ModifierFunctionTypes...> const& modifierFunctions);
+
+			template <size_t I = 0, class... ModifierFunctionTypes>
+			static void ApplyModifiers(std::tuple<ModifierFunctionTypes...> const& modifierFunctions,
+				SampleType& input);
+		};
+
 		template <class RegressionType, class... ModifierOneShotParamsTypes>
-		static Regressor<typename RegressionType::T> CrossValidate(const std::vector<col_vector<typename RegressionType::T>>& inputExamples,
-			std::vector<typename RegressionType::T> const& targetExamples,
+		static typename RegressionType::SampleType::type CrossValidate(const std::vector<typename RegressionType::SampleType>& inputExamples,
+			std::vector<typename RegressionType::SampleType::type> const& targetExamples,
 			std::string const& randomSeed,
-			typename RegressionType::OneShotTrainingParams const& regressionTrainingParams,
+			typename RegressionType::OneShotTrainingParams const& regressionOneShotTrainingParams,
 			size_t const numFolds,
 			CrossValidationMetric const metric,
-			std::vector<typename RegressionType::T>& diagnostics,
-			std::tuple<ModifierOneShotParamsTypes...> const& modifierOneShotParams);
+			std::tuple<ModifierOneShotParamsTypes...> const& modifierOneShotTrainingParams);
 
-		template <class RegressionType, class... ModifierCrossValidationTrainingTypes>
-		static void ProcessModifierCrossValidationParameterPack(std::vector<col_vector<typename RegressionType::T>> const& inputExamples,
-			std::vector<typename RegressionType::T> const& targetExamples,
+		template <class RegressionType, class... ModifierOneShotTrainingTypes>
+		static void CrossValidateTrainingParameterSets(std::vector<typename RegressionType::SampleType> const& inputExamples,
+			std::vector<typename RegressionType::SampleType::type> const& targetExamples,
 			std::string const& randomSeed,
 			std::vector<typename RegressionType::OneShotTrainingParams> const& regressionTrainingParamsToTry,
+			std::vector<std::tuple<ModifierOneShotTrainingTypes...>>& modifierTrainingParamsToTry,
 			size_t const numFolds,
 			CrossValidationMetric const metric,
-			std::vector<std::pair<Regressor<typename RegressionType::T>, std::vector<typename RegressionType::T>>>& allCrossValidatedRegressors,
-			dlib::thread_pool& tp,
-			std::tuple<ModifierCrossValidationTrainingTypes...> const& modifierCrossValidationParams);
-
-		template <class RegressionType, size_t I, class... ModifierFindMinGlobalTrainingTypes, class... ModifierOneShotTrainingTypes, size_t TotalNumParams>
-		static Regressor<typename RegressionType::T> CreateModifiersAndCrossValidate(std::tuple<ModifierOneShotTrainingTypes...>& modifiersSoFar,
-			col_vector<typename RegressionType::T> const& params,
-			std::array<std::pair<bool, typename RegressionType::T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned const mapOffset,
-			unsigned& paramsOffset,
-			std::vector<col_vector<typename RegressionType::T>> const& inputExamples,
-			std::vector<typename RegressionType::T> const& targetExamples,
-			std::string const& randomSeed,
-			typename RegressionType::OneShotTrainingParams const& regressionParams,
-			size_t const numFolds,
-			CrossValidationMetric const metric,
-			std::vector<typename RegressionType::T>& diagnostics);
+			std::vector<std::pair<std::pair<size_t, size_t>, typename RegressionType::SampleType::type>>& allCrossValidatedRegressors,
+			dlib::thread_pool& tp);
 
 		template <size_t I, class... ModifierFindMinGlobalTrainingTypes>
 		static constexpr size_t GetNumModifierParams();
 
 		template <typename T, size_t TotalNumParams>
 		static void ConfigureModifierMapping(std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-			unsigned const offset);
+			size_t const offset);
 
 		template <typename T, size_t TotalNumParams, class... ModifierFindMinGlobalTrainingTypes, class ModifierFindMinGlobalTrainingType>
 		static void ConfigureModifierMapping(std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap,
-			unsigned const offset,
+			size_t const offset,
 			ModifierFindMinGlobalTrainingType const& first,
 			ModifierFindMinGlobalTrainingTypes const&... rest);
 
@@ -80,18 +99,25 @@ namespace Regressors
 			col_vector<T>& upperBound,
 			std::vector<bool>& isIntegerParam,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned const mapOffset,
-			unsigned& paramsOffset);
+			size_t const mapOffset,
+			size_t& paramsOffset);
 
 		template <typename T, size_t TotalNumParams, class ModifierFindMinGlobalTrainingType, class... ModifierFindMinGlobalTrainingTypes>
 		static void PackageModifierParams(col_vector<T>& lowerBound,
 			col_vector<T>& upperBound,
 			std::vector<bool>& isIntegerParam,
 			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
-			unsigned const mapOffset,
-			unsigned& paramsOffset,
+			size_t const mapOffset,
+			size_t& paramsOffset,
 			ModifierFindMinGlobalTrainingType const& first,
 			ModifierFindMinGlobalTrainingTypes const&... rest);
+
+		template <typename T, size_t TotalNumParams, class... ModifierOneShotTrainingParams>
+		static void UnpackModifierParams(std::tuple<ModifierOneShotTrainingParams...>& modifierOneShotTrainingParams,
+			col_vector<T> const& vecParams,
+			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
+			size_t const mapOffset,
+			size_t& paramsOffset);
 
 		template <typename T, size_t TotalNumParams>
 		static void ProcessModifierFindMinGlobalParameterPack(std::array<std::pair<bool, T>, TotalNumParams> optimiseParamsMap);
@@ -107,99 +133,49 @@ namespace Regressors
 	public:
 
 		template <class RegressionType, class... ModifierOneShotTrainingTypes>
-		static Regressor<typename RegressionType::T> TrainRegressorOneShot(const std::vector<col_vector<typename RegressionType::T>>& inputExamples,
-			std::vector<typename RegressionType::T> const& targetExamples,
+		static impl<RegressionType, typename ModifierOneShotTrainingTypes::ModifierType::ModifierFunction...> TrainRegressorOneShot(const std::vector<typename RegressionType::SampleType>& inputExamples,
+			std::vector<typename RegressionType::SampleType::type> const& targetExamples,
 			std::string const& randomSeed,
 			CrossValidationMetric const metric,
 			size_t const numFolds,
-			std::vector<typename RegressionType::T>& diagnostics,
+			std::vector<typename RegressionType::SampleType::type>& diagnostics,
 			typename RegressionType::OneShotTrainingParams const& regressionOneShotTrainingParams,
 			ModifierOneShotTrainingTypes const&... modifiersOneShotTrainingPack);
 
 		template <class RegressionType, class... ModifierCrossValidationTrainingTypes>
-		static Regressor<typename RegressionType::T> TrainRegressorCrossValidation(const std::vector<col_vector<typename RegressionType::T>>& inputExamples,
-			std::vector<typename RegressionType::T> const& targetExamples,
+		static impl<RegressionType, typename ModifierCrossValidationTrainingTypes::ModifierType::ModifierFunction...> TrainRegressorCrossValidation(const std::vector<typename RegressionType::SampleType>& inputExamples,
+			std::vector<typename RegressionType::SampleType::type> const& targetExamples,
 			std::string const& randomSeed,
 			CrossValidationMetric const metric,
 			size_t const numFolds,
-			unsigned long const numThreads,
-			std::vector<typename RegressionType::T>& diagnostics,
+			size_t const numThreads,
+			std::vector<typename RegressionType::SampleType::type>& diagnostics,
 			typename RegressionType::CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 			ModifierCrossValidationTrainingTypes const&... modifiersCrossValidationTrainingPack);
 
 		template <class RegressionType, class... ModifierFindMinGlobalTrainingTypes>
-		static Regressor<typename RegressionType::T> TrainRegressorFindMinGlobal(const std::vector<col_vector<typename RegressionType::T>>& inputExamples,
-			std::vector<typename RegressionType::T> const& targetExamples,
+		static impl<RegressionType, typename ModifierFindMinGlobalTrainingTypes::ModifierType::ModifierFunction...> TrainRegressorFindMinGlobal(const std::vector<typename RegressionType::SampleType>& inputExamples,
+			std::vector<typename RegressionType::SampleType::type> const& targetExamples,
 			std::string const& randomSeed,
 			CrossValidationMetric const metric,
 			size_t const numFolds,
-			typename RegressionType::T const& optimisationTolerance,
-			unsigned long const numThreads,
+			typename RegressionType::SampleType::type const& optimisationTolerance,
+			size_t const numThreads,
 			size_t const maxNumCalls,
-			std::vector<typename RegressionType::T>& diagnostics,
+			std::vector<typename RegressionType::SampleType::type>& diagnostics,
 			typename RegressionType::FindMinGlobalTrainingParams const& regressionFindMinGlobalTrainingParams,
 			ModifierFindMinGlobalTrainingTypes const&... modifiersFindMinGlobalTrainingPack);
 	};
 
-	template <typename T>
+	template <typename SampleType>
 	class Regressor
 	{
 	private:
-		static size_t const MaxNumModifiers;
-		class impl_base
-		{
-		public:
-			virtual T Predict(col_vector<T> input) const = 0;
-			virtual T const& GetTrainingError() const = 0;
-			virtual typename RegressionTypes::RegressionComponentBase::RegressionOneShotTrainingParamsBase const& GetTrainedRegressorParams() const = 0;
-			virtual constexpr size_t GetNumModifiers() const = 0;
-			virtual typename ModifierTypes::ModifierComponentBase::ModifierOneShotTrainingParamsBase const& GetTrainedModifierParams(size_t const index) const = 0;
-			virtual RegressionTypes::RegressorTypes const& GetRegressorType() const = 0;
-			virtual void Serialize(std::ostream& out) const = 0;
-			template <size_t I = 0, class... ModifierFunctionTypes>
-			static void SerializeModifiers(std::tuple<ModifierFunctionTypes...> const&, std::ostream& out);
-		};
-
-		template <class RegressionType, class... ModifierFunctionTypes>
-		class impl : public Regressor<typename RegressionType::T>::impl_base
-		{
-		private:
-			
-			typedef typename RegressionType::T T;
-			T TrainingError;
-			typename RegressionType::OneShotTrainingParams TrainedRegressorParams;
-			typename RegressionType::DecisionFunction Function;
-			std::tuple<ModifierFunctionTypes...> ModifierFunctions;
-
-		public:
-
-			T Predict(col_vector<T> input) const override;
-			typename RegressionTypes::RegressionComponentBase::RegressionOneShotTrainingParamsBase const& GetTrainedRegressorParams() const override;
-			constexpr size_t GetNumModifiers() const override;
-			typename ModifierTypes::ModifierComponentBase::ModifierOneShotTrainingParamsBase const& GetTrainedModifierParams(size_t const index) const override;
-			T const& GetTrainingError() const override;
-			RegressionTypes::RegressorTypes const& GetRegressorType() const override;
-			void Serialize(std::ostream& out) const override;
-
-			impl(typename RegressionType::DecisionFunction const& function,
-				std::tuple<ModifierFunctionTypes...> const& modifierFunctions,
-				typename RegressionType::T const& trainingError,
-				typename RegressionType::OneShotTrainingParams const& regressorTrainingParams);
-
-		private:
-			template <size_t I = 0>
-			static void ApplyModifiers(std::tuple<ModifierFunctionTypes...> const& modifierFunctions,
-				col_vector<T>& input);
-
-			template <size_t I = 0>
-			static typename ModifierTypes::ModifierComponentBase::ModifierOneShotTrainingParamsBase const& GetModifierParams(std::tuple<ModifierFunctionTypes...> const& modifierFunctions,
-				size_t const index);
-		};
-
-		std::unique_ptr<impl_base> m_impl;
+		std::unique_ptr<RegressorTrainer::impl_base<SampleType>> m_impl;
 
 	public:
-
+		typedef SampleType SampleType;
+		typedef typename SampleType::type T;
 		friend class RegressionTypes::RegressionComponentBase;
 
 		Regressor();
@@ -214,33 +190,85 @@ namespace Regressors
 
 		Regressor& operator= (Regressor&& other) noexcept;
 
-		T Predict(col_vector<T> const& input) const;
+		template <class RegressionType, class... ModifierFunctionTypes>
+		Regressor(impl<RegressionType, ModifierFunctionTypes...> const& regressor);
+
+		template <class RegressionType, class... ModifierFunctionTypes>
+		Regressor(impl<RegressionType, ModifierFunctionTypes...>&& regressor);
+
+		T Predict(SampleType const& input) const;
 		typename RegressionTypes::RegressionComponentBase::RegressionOneShotTrainingParamsBase const& GetTrainedRegressorParams() const;
 		constexpr size_t GetNumModifiers() const;
 		typename ModifierTypes::ModifierComponentBase::ModifierOneShotTrainingParamsBase const& GetTrainedModifierParams(size_t const index) const;
 		T const& GetTrainingError() const;
-		RegressionTypes::RegressorTypes const& GetRegresorType() const;
+		RegressionTypes::RegressorTypes const& GetRegressorType() const;
 
-		template <typename T2>
-		friend void serialize(Regressor<T2> const& item, std::ostream& out);
+		template <typename SampleType2>
+		friend void serialize(Regressor<SampleType2> const& item, std::ostream& out);
 
-		template <typename T2>
-		friend void deserialize(Regressor<T2>& item, std::istream& in);
+		template <typename SampleType2>
+		friend void deserialize(Regressor<SampleType2>& item, std::istream& in);
 
-		template <class RegressionType, typename T2>
-		friend void DelegateDeserialize(Regressor<T2>& item, std::istream& in);
+		template <class RegressionType>
+		friend void DelegateDeserialize(Regressor<typename RegressionType::SampleType>& item, std::istream& in);
 		
-		template <class RegressionType, size_t I = 0, class... ModifierFunctionTypesSoFar>
-		friend void DeserializeModifiers(unsigned const numModifiers,
-			std::tuple<ModifierFunctionTypesSoFar...> const& modifierFunctions,
+		template <class RegressionType, size_t I = 0, class... ModifierFunctionTypes>
+		friend void DeserializeModifiers(size_t const numModifiers,
+			std::tuple<ModifierFunctionTypes...> const& modifierFunctions,
 			typename RegressionType::OneShotTrainingParams const& regressionParams,
 			typename RegressionType::DecisionFunction const& function,
-			typename RegressionType::T const& trainingError,
-			Regressor<typename RegressionType::T>& item,
+			typename RegressionType::SampleType::type const& trainingError,
+			Regressor<typename RegressionType::SampleType>& item,
 			std::istream& in);
 	};
-	template <typename T>
-	size_t const Regressor<T>::MaxNumModifiers = 5ull;
+
+	template <class RegressionType, class... ModifierFunctionTypes>
+	class impl : public RegressorTrainer::impl_base<typename RegressionType::SampleType>
+	{
+	public:
+		static size_t const MaxNumModifiers;
+
+	private:
+		typedef typename RegressionType::SampleType SampleType;
+		typedef typename RegressionType::SampleType::type T;
+		typename T TrainingError;
+		typename RegressionType::OneShotTrainingParams TrainedRegressorParams;
+		typename RegressionType::DecisionFunction Function;
+		std::tuple<ModifierFunctionTypes...> ModifierFunctions;
+
+	public:
+		T Predict(SampleType input) const override;
+		typename RegressionType::OneShotTrainingParams const& GetTrainedRegressorParams() const override;
+		constexpr size_t GetNumModifiers() const override;
+		typename ModifierTypes::ModifierComponentBase::ModifierOneShotTrainingParamsBase const& GetTrainedModifierParams(size_t const index) const override;
+		T const& GetTrainingError() const override;
+		RegressionTypes::RegressorTypes const& GetRegressorType() const override;
+
+		impl(typename RegressionType::DecisionFunction const& function,
+			std::tuple<ModifierFunctionTypes...> const& modifierFunctions,
+			T const& trainingError,
+			typename RegressionType::OneShotTrainingParams const& regressorTrainingParams);
+
+		impl();
+
+		template <class RegressionType2, class... ModifierFunctionTypes2>
+		friend void serialize(impl<RegressionType2, ModifierFunctionTypes2... > const& item, std::ostream& out);
+
+		template <class RegressionType2, class... ModifierFunctionTypes2>
+		friend void deserialize(impl<RegressionType2, ModifierFunctionTypes2...>& item, std::istream& in);
+
+		template <typename SampleType2>
+		friend void serialize(Regressor<SampleType2> const& item, std::ostream& out);
+
+		template <typename SampleType2>
+		friend void deserialize(Regressor<SampleType2>& item, std::istream& in);
+
+	private:
+		void Serialize(std::ostream& out) const override;
+	};
+
+	template <class RegressorType, class... ModifierFunctionTypes>
+	size_t const impl<RegressorType, ModifierFunctionTypes...>::MaxNumModifiers = 5ull;
 }
 
 #include "impl/Regressor.hpp"
