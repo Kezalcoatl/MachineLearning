@@ -1,0 +1,3 @@
+A machine learning library build on the back of dlib. Currently supports a range of regression types (kernel ridge regression, support vector machines, random forest, iteratively reweighted least squares), and a few kernel types (linear, polynomial, radial basis, sigmoid). Random forest supports only dense feature extraction, and iteratively reweighted least squares supports logit, Lagrange polynomial, and Fourier series link function types. Ultimately these regressors will form the building blocks of a neural net framework.
+
+To install, run CMake build on MachineLearning/CMakeLists.txt and deploy locally. Open local build with Visual Studio 2022 and compile!
