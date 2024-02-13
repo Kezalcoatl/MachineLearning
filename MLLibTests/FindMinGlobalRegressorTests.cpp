@@ -25,6 +25,9 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	typedef RegressionTypes::SupportVectorRegression<KernelTypes::RadialBasisKernel<SampleType>> RadialBasisSVR;
 	typedef RegressionTypes::SupportVectorRegression<KernelTypes::SigmoidKernel<SampleType>> SigmoidSVR;
 	typedef RegressionTypes::RandomForestRegression<KernelTypes::DenseExtractor<SampleType>> DenseRF;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::LogitLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearLogitIRLS;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::FourierLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearFourierIRLS;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::LagrangeLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearLagrangeIRLS;
 
 	static size_t const numExamples = 50;
 	static size_t const numOrdinates = 10;
@@ -42,36 +45,42 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	}
 
 	std::string const randomSeed = "MLLib";
-	CrossValidationMetric const metric = CrossValidationMetric::SumSquareMean;
+	ECrossValidationMetric const metric = ECrossValidationMetric::SumSquareMean;
 	size_t const numFolds = 4;
 	T const optimisationTolerance = 1.e-2;
 	size_t const maxNumCalls = 100;
 	size_t const numThreads = 16;
-	std::string const linearKRRRegressorMD5 = "e75de35cc388bc6dc8d54442be3bf600";
-	std::string const linearKRRDiagnosticsMD5 = "44b0299083a11f13ae9ebb2034527127";
-	std::string const polynomialKRRRegressorMD5 = "7bd86356a98072bacd34ee8a16a3962e";
-	std::string const polynomialKRRDiagnosticsMD5 = "2c1782bb78e6cd2ae6e795b749f1b45d";
-	std::string const radialBasisKRRRegressorMD5 = "4e69f083c3ebabfcfb554df89b66927b";
-	std::string const radialBasisKRRDiagnosticsMD5 = "4256de6b4e83243872a4ca48faedf524";
-	std::string const sigmoidKRRRegressorMD5 = "13880ac3deab7170c247c8abd47e7b36";
-	std::string const sigmoidKRRDiagnosticsMD5 = "17cf7dcb0c32fce6ffb1fa266e4b6dca";
-	std::string const linearSVRRegressorMD5 = "e8226c57c9cee22ec608e1a2d969a3b7";
-	std::string const linearSVRDiagnosticsMD5 = "796a482b241e0e0c7b4b769311ce0abf";
-	std::string const polynomialSVRRegressorMD5 = "3c14e2b390bfa04aff2f38664d7a7025";
-	std::string const polynomialSVRDiagnosticsMD5 = "7975b99f1eb70d651c89fd5812255a72";
-	std::string const radialBasisSVRRegressorMD5 = "37c8bacf6784400a239764ad2539853b";
-	std::string const radialBasisSVRDiagnosticsMD5 = "38e727f79fbcaa911ad19d95e676fbee";
-	std::string const sigmoidSVRRegressorMD5 = "8882a652a21f80b5da487d44b7fdbdbb";
-	std::string const sigmoidSVRDiagnosticsMD5 = "b2b768bf60e7dc4bac708a549e3ec97c";
-	std::string const denseRFRegressorMD5 = "fca84aeb4359bbbf0828358cff016421";
-	std::string const denseRFDiagnosticsMD5 = "70600da8e1aa29238dbde3b57921ebae";
-	/*
+	std::string const linearKRRRegressorMD5 = "bf41fd320889092f85a19bc276fbeba6";
+	std::string const linearKRRDiagnosticsMD5 = "25bd173dc2870a9c677d42f0469197c4";
+	std::string const polynomialKRRRegressorMD5 = "37f35baf45b8a41d30a0fb397483b6c5";
+	std::string const polynomialKRRDiagnosticsMD5 = "4dfd046a12a8b8fa9539b456bb711d86";
+	std::string const radialBasisKRRRegressorMD5 = "e5f616123d69399ac9983306ad6e6db5";
+	std::string const radialBasisKRRDiagnosticsMD5 = "6f224c7b07faa50ffe47ebd180d46833";
+	std::string const sigmoidKRRRegressorMD5 = "9f5ee42b10e81b0cba79f4b3b430bccc";
+	std::string const sigmoidKRRDiagnosticsMD5 = "d74f373473f0a1f69a6359a36968a68b";
+	std::string const linearSVRRegressorMD5 = "4717f8c05eb4855c68185bd0f8cf6566";
+	std::string const linearSVRDiagnosticsMD5 = "30169b4d83ecfbc6d3f3fc8ab39e92be";
+	std::string const polynomialSVRRegressorMD5 = "dd6e3d1fc83b81090be81f3fecafa099";
+	std::string const polynomialSVRDiagnosticsMD5 = "f8433836ce21b974f40f53d7ef735030";
+	std::string const radialBasisSVRRegressorMD5 = "034c0769c878eb3194bbb504f99b5f8f";
+	std::string const radialBasisSVRDiagnosticsMD5 = "b1dba4383997a2f6109f6a67f5380079";
+	std::string const sigmoidSVRRegressorMD5 = "5e88c20a9c9ec1ab1ae704484befc67c";
+	std::string const sigmoidSVRDiagnosticsMD5 = "56eb067604fed3831da1e9acf28b147d";
+	std::string const denseRFRegressorMD5 = "d5ed0e92b49e1161dd9a925b482c186d";
+	std::string const denseRFDiagnosticsMD5 = "892972ebeab61a813756c62862fc6d30";
+	std::string const linearLogitIRLSRegressorMD5 = "";
+	std::string const linearLogitIRLSDiagnosticsMD5 = "";
+	std::string const linearFourierIRLSRegressorMD5 = "";
+	std::string const linearFourierIRLSDiagnosticsMD5 = "";
+	std::string const linearLagrangeIRLSRegressorMD5 = "";
+	std::string const linearLagrangeIRLSDiagnosticsMD5 = "";
+
 	ModifierTypes::NormaliserModifier<SampleType>::FindMinGlobalTrainingParams normaliserFMGParams;
 	ModifierTypes::InputPCAModifier<SampleType>::FindMinGlobalTrainingParams PCAFMGParams;
 	PCAFMGParams.LowerTargetVariance = 0.5;
 	PCAFMGParams.UpperTargetVariance = 1.0;
 	ModifierTypes::FeatureSelectionModifier<SampleType>::FindMinGlobalTrainingParams featureSelectionFMGParams;
-	featureSelectionFMGParams.LowerFeatureFraction = 0.2;
+	featureSelectionFMGParams.LowerFeatureFraction = 0.5;
 	featureSelectionFMGParams.UpperFeatureFraction = 1.0;
 
 	std::vector<T> linearKRRDiagnostics;
@@ -83,7 +92,7 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	auto const linearKRRRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<LinearKRR>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, linearKRRDiagnostics, linearKRRFMGParams, normaliserFMGParams, featureSelectionFMGParams, PCAFMGParams);
 	EXPECT_EQ(GetMD5(linearKRRRegressor), linearKRRRegressorMD5);
 	EXPECT_EQ(GetMD5(linearKRRDiagnostics), linearKRRDiagnosticsMD5);
-
+	
 	std::vector<T> polynomialKRRDiagnostics;
 	PolynomialKRR::FindMinGlobalTrainingParams polynomialKRRFMGParams;
 	polynomialKRRFMGParams.LowerLambda = 1.e-6;
@@ -205,5 +214,28 @@ TEST(FindMinGlobalTraining, RegressorTests)
 	auto const denseRFRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<DenseRF>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, denseRFDiagnostics, denseRFFMGParams, normaliserFMGParams, featureSelectionFMGParams, PCAFMGParams);
 	EXPECT_EQ(GetMD5(denseRFRegressor), denseRFRegressorMD5);
 	EXPECT_EQ(GetMD5(denseRFDiagnostics), denseRFDiagnosticsMD5);
-	*/
+
+	std::vector<T> linearFourierIRLSDiagnostics;
+	LinearFourierIRLS::FindMinGlobalTrainingParams linearFourierIRLSFMGParams;
+	denseRFFMGParams.LowerNumTrees = 50;
+	denseRFFMGParams.UpperNumTrees = 200;
+	denseRFFMGParams.LowerMinSamplesPerLeaf = 2;
+	denseRFFMGParams.UpperMinSamplesPerLeaf = 10;
+	denseRFFMGParams.LowerSubsamplingFraction = 0.2;
+	denseRFFMGParams.UpperSubsamplingFraction = 0.8;
+	auto const linearFourierIRLSRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<LinearFourierIRLS>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, linearFourierIRLSDiagnostics, linearFourierIRLSFMGParams, normaliserFMGParams, featureSelectionFMGParams, PCAFMGParams);
+	EXPECT_EQ(GetMD5(linearFourierIRLSRegressor), linearFourierIRLSRegressorMD5);
+	EXPECT_EQ(GetMD5(linearFourierIRLSDiagnostics), linearFourierIRLSDiagnosticsMD5);
+
+	std::vector<T> linearLagrangeIRLSDiagnostics;
+	LinearLagrangeIRLS::FindMinGlobalTrainingParams linearLagrangeIRLSFMGParams;
+	denseRFFMGParams.LowerNumTrees = 50;
+	denseRFFMGParams.UpperNumTrees = 200;
+	denseRFFMGParams.LowerMinSamplesPerLeaf = 2;
+	denseRFFMGParams.UpperMinSamplesPerLeaf = 10;
+	denseRFFMGParams.LowerSubsamplingFraction = 0.2;
+	denseRFFMGParams.UpperSubsamplingFraction = 0.8;
+	auto const linearLagrangeIRLSRegressor = Regressors::RegressorTrainer::TrainRegressorFindMinGlobal<LinearLagrangeIRLS>(inputExamples, targetExamples, randomSeed, metric, numFolds, optimisationTolerance, numThreads, maxNumCalls, linearLagrangeIRLSDiagnostics, linearLagrangeIRLSFMGParams, normaliserFMGParams, featureSelectionFMGParams, PCAFMGParams);
+	EXPECT_EQ(GetMD5(linearLagrangeIRLSRegressor), linearLagrangeIRLSRegressorMD5);
+	EXPECT_EQ(GetMD5(linearLagrangeIRLSDiagnostics), linearLagrangeIRLSDiagnosticsMD5);
 }

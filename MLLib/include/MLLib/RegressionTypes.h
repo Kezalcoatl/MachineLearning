@@ -1,6 +1,7 @@
 #pragma once
 #include <MLLib/TypeDefinitions.h>
 #include <MLLib/KernelTypes.h>
+#include <MLLib/GKMTrainer.h>
 #include <dlib/svm.h>
 
 namespace Regressors
@@ -8,54 +9,17 @@ namespace Regressors
 	template <class RegressionType, class... ModifierFunctionTypes>
 	class impl;
 
+	class RegressorTrainer;
+
+	enum class ERegressorTypes;
+
 	namespace RegressionTypes
 	{
-		DECLARE_ENUM(RegressorTypes,
-			LinearKernelRidgeRegression, 
-			PolynomialKernelRidgeRegression,
-			RadialBasisKernelRidgeRegression,
-			SigmoidKernelRidgeRegression,
-			LinearSupportVectorRegression,
-			PolynomialSupportVectorRegression,
-			RadialBasisSupportVectorRegression,
-			SigmoidSupportVectorRegression,
-			DenseRandomForestRegression);
-
-		class RegressionComponentBase
-		{
-		public:
-			RegressionComponentBase() = delete;
-
-			struct RegressionOneShotTrainingParamsBase
-			{
-			public:
-				virtual RegressorTypes GetRegressionType() const = 0;
-			};
-
-			template <class RegressionType, size_t I = 0, class... ModifierOneShotTrainingParamsTypes>
-			static impl<RegressionType, typename ModifierOneShotTrainingParamsTypes::ModifierType::ModifierFunction...> TrainModifiersAndRegressor(std::vector<typename RegressionType::SampleType> const& inputExamples,
-				std::vector<typename RegressionType::SampleType::type> const& targetExamples,
-				typename RegressionType::OneShotTrainingParams const& regressionParams,
-				std::vector<typename RegressionType::SampleType::type>& diagnostics,
-				typename RegressionType::SampleType::type const& trainingError,
-				std::tuple<ModifierOneShotTrainingParamsTypes...> const& modifierOneShotParams,
-				std::tuple<typename ModifierOneShotTrainingParamsTypes::ModifierType::ModifierFunction...>& modifierFunctions);
-
-		protected:
-			template <class RegressionType, class... ModifierFunctionTypes>
-			static impl<RegressionType, ModifierFunctionTypes...> MakeRegressor(typename RegressionType::DecisionFunction const& function,
-				std::tuple<ModifierFunctionTypes...> const& modifiers,
-				typename RegressionType::SampleType::type const& trainingError,
-				typename RegressionType::OneShotTrainingParams const& regressorTrainingParams);
-		};
-
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		template <class KernelType>
-		class KernelRidgeRegression : public RegressionComponentBase
+		class KernelRidgeRegression
 		{
 		public:
-			 RegressorTypes static const RegressorTypeEnum;
+			 ERegressorTypes static const RegressorTypeEnum;
 			 typedef typename KernelType::SampleType SampleType;
 			 typedef typename KernelType::SampleType::type T;
 			 typedef dlib::decision_function<typename KernelType::KernelFunctionType> DecisionFunction;
@@ -64,9 +28,9 @@ namespace Regressors
 			 size_t static const NumTotalParams;
 			 size_t static const NumRegressionParams;
 
-			 struct OneShotTrainingParams : public RegressionComponentBase::RegressionOneShotTrainingParamsBase
+			 struct OneShotTrainingParams : public RegressorTrainer::RegressionOneShotTrainingParamsBase
 			 {
-				 int MaxBasisFunctions;
+				 unsigned long MaxBasisFunctions;
 				 T Lambda;
 				 typename KernelType::OneShotTrainingParams KernelOneShotTrainingParams;
 
@@ -77,7 +41,7 @@ namespace Regressors
 					 std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 					 size_t& paramsOffset);
 
-				 RegressorTypes GetRegressionType() const override;
+				 ERegressorTypes GetRegressionType() const override;
 
 				 friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				 {
@@ -96,7 +60,7 @@ namespace Regressors
 
 			 struct CrossValidationTrainingParams
 			 {
-				 std::vector<int> MaxBasisFunctionsToTry;
+				 std::vector<unsigned long> MaxBasisFunctionsToTry;
 				 std::vector<T> LambdaToTry;
 				 typename KernelType::CrossValidationTrainingParams KernelCrossValidationTrainingParams;
 
@@ -105,8 +69,8 @@ namespace Regressors
 
 			 struct FindMinGlobalTrainingParams
 			 {
-				 int LowerMaxBasisFunctions;
-				 int UpperMaxBasisFunctions;
+				 unsigned long LowerMaxBasisFunctions;
+				 unsigned long UpperMaxBasisFunctions;
 				 T LowerLambda;
 				 T UpperLambda;
 				 typename KernelType::FindMinGlobalTrainingParams KernelFindMinGlobalTrainingParams;
@@ -122,7 +86,7 @@ namespace Regressors
 				 T const& trainingError,
 				 std::tuple<ModifierFunctionTypes...> const& modifierFunctions);
 
-			 static size_t IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+			 static void IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 				 std::vector<OneShotTrainingParams>& regressionParamSets);
 
 			 template <size_t TotalNumParams>
@@ -141,10 +105,10 @@ namespace Regressors
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		template <class KernelType>
-		class SupportVectorRegression : public RegressionComponentBase
+		class SupportVectorRegression
 		{
 		public:
-			RegressorTypes static const RegressorTypeEnum;
+			ERegressorTypes static const RegressorTypeEnum;
 			typedef typename KernelType::SampleType SampleType;
 			typedef typename KernelType::SampleType::type T;
 			typedef dlib::decision_function<typename KernelType::KernelFunctionType> DecisionFunction;
@@ -153,7 +117,7 @@ namespace Regressors
 			size_t static const NumTotalParams;
 			size_t static const NumRegressionParams;
 
-			struct OneShotTrainingParams : public RegressionComponentBase::RegressionOneShotTrainingParamsBase
+			struct OneShotTrainingParams : public RegressorTrainer::RegressionOneShotTrainingParamsBase
 			{
 				T C;
 				T Epsilon;
@@ -168,7 +132,7 @@ namespace Regressors
 					std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 					size_t& paramsOffset);
 
-				RegressorTypes GetRegressionType() const override;
+				ERegressorTypes GetRegressionType() const override;
 
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{
@@ -223,7 +187,7 @@ namespace Regressors
 				T const& trainingError,
 				std::tuple<ModifierFunctionTypes...> const& modifierFunctions);
 
-			static size_t IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+			static void IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 				std::vector<OneShotTrainingParams>& regressionParamSets);
 
 			template <size_t TotalNumParams>
@@ -242,10 +206,10 @@ namespace Regressors
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		template <class ExtractorType>
-		class RandomForestRegression : public RegressionComponentBase
+		class RandomForestRegression
 		{
 		public:
-			RegressorTypes static const RegressorTypeEnum;
+			ERegressorTypes static const RegressorTypeEnum;
 			typedef typename ExtractorType::SampleType SampleType;
 			typedef typename ExtractorType::SampleType::type T;
 			typedef dlib::random_forest_regression_function<typename ExtractorType::ExtractorFunctionType> DecisionFunction;
@@ -254,7 +218,7 @@ namespace Regressors
 			size_t static const NumTotalParams;
 			size_t static const NumRegressionParams;
 
-			struct OneShotTrainingParams : public RegressionComponentBase::RegressionOneShotTrainingParamsBase
+			struct OneShotTrainingParams : public RegressorTrainer::RegressionOneShotTrainingParamsBase
 			{
 				size_t NumTrees;
 				size_t MinSamplesPerLeaf;
@@ -268,7 +232,7 @@ namespace Regressors
 					std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 					size_t& paramsOffset);
 
-				RegressorTypes GetRegressionType() const override;
+				ERegressorTypes GetRegressionType() const override;
 
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{
@@ -318,7 +282,116 @@ namespace Regressors
 				T const& trainingError,
 				std::tuple<ModifierFunctionTypes...> const& modifierFunctions);
 
-			static size_t IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+			static void IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+				std::vector<OneShotTrainingParams>& regressionParamSets);
+
+			template <size_t TotalNumParams>
+			static void PackageParameters(col_vector<T>& lowerBound,
+				col_vector<T>& upperBound,
+				std::vector<bool>& isIntegerParam,
+				FindMinGlobalTrainingParams const& fmgTrainingParams,
+				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
+				size_t& paramsOffset);
+
+			template <size_t TotalNumParams>
+			static void ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
+				std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap);
+		};
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		template <class LinkFunctionType>
+		class IterativelyReweightedLeastSquaresRegression
+		{
+		public:
+			ERegressorTypes static const RegressorTypeEnum;
+			typedef LinkFunctionType LinkFunctionType;
+			typedef typename LinkFunctionType::KernelType KernelType;
+			typedef typename KernelType::SampleType SampleType;
+			typedef typename KernelType::SampleType::type T;
+			typedef GKMDecisionFunction<LinkFunctionType> DecisionFunction;
+
+			IterativelyReweightedLeastSquaresRegression() = delete;
+			size_t static const NumTotalParams;
+			size_t static const NumRegressionParams;
+
+			struct OneShotTrainingParams : public RegressorTrainer::RegressionOneShotTrainingParamsBase
+			{
+				size_t MaxNumIterations;
+				T ConvergenceTolerance;
+				unsigned long MaxBasisFunctions;
+				T Lambda;
+
+				typename LinkFunctionType::OneShotTrainingParams LinkFunctionOneShotTrainingParams;
+				typename KernelType::OneShotTrainingParams KernelOneShotTrainingParams;
+
+				OneShotTrainingParams();
+
+				template <size_t TotalNumParams>
+				OneShotTrainingParams(col_vector<T> const& vecParams,
+					std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
+					size_t& paramsOffset);
+
+				ERegressorTypes GetRegressionType() const override;
+
+				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
+				{
+					dlib::serialize(item.MaxNumIterations, out);
+					dlib::serialize(item.ConvergenceTolerance, out);
+					dlib::serialize(item.MaxBasisFunctions, out);
+					dlib::serialize(item.Lambda, out);
+					serialize(item.LinkFunctionOneShotTrainingParams, out);
+					serialize(item.KernelOneShotTrainingParams, out);
+				}
+
+				friend void deserialize(OneShotTrainingParams& item, std::istream& in)
+				{
+					dlib::deserialize(item.MaxNumIterations, in);
+					dlib::deserialize(item.ConvergenceTolerance, in);
+					dlib::deserialize(item.MaxBasisFunctions, in);
+					dlib::deserialize(item.Lambda, in);
+					deserialize(item.LinkFunctionOneShotTrainingParams, in);
+					deserialize(item.KernelOneShotTrainingParams, in);
+				}
+			};
+
+			struct CrossValidationTrainingParams
+			{
+				std::vector<size_t> MaxNumIterationsToTry;
+				std::vector<T> ConvergenceToleranceToTry;
+				std::vector<unsigned long> MaxBasisFunctionsToTry;
+				std::vector<T> LambdaToTry;
+				typename LinkFunctionType::CrossValidationTrainingParams LinkFunctionCrossValidationTrainingParams;
+				typename KernelType::CrossValidationTrainingParams KernelCrossValidationTrainingParams;
+
+				CrossValidationTrainingParams();
+			};
+
+			struct FindMinGlobalTrainingParams
+			{
+				size_t LowerMaxNumIterations;
+				size_t UpperMaxNumIterations;
+				T LowerConvergenceTolerance;
+				T UpperConvergenceTolerance;
+				unsigned long LowerMaxBasisFunctions;
+				unsigned long UpperMaxBasisFunctions;
+				T LowerLambda;
+				T UpperLambda;
+				typename LinkFunctionType::FindMinGlobalTrainingParams LinkFunctionFindMinGlobalTrainingParams;
+				typename KernelType::FindMinGlobalTrainingParams KernelFindMinGlobalTrainingParams;
+
+				FindMinGlobalTrainingParams();
+			};
+
+			template <class... ModifierFunctionTypes>
+			static impl<IterativelyReweightedLeastSquaresRegression, ModifierFunctionTypes...> Train(std::vector<SampleType> const& inputExamples,
+				std::vector<T> const& targetExamples,
+				OneShotTrainingParams const& regressionTrainingParams,
+				std::vector<T>& Residuals,
+				T const& trainingError,
+				std::tuple<ModifierFunctionTypes...> const& modifierFunctions);
+
+			static void IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 				std::vector<OneShotTrainingParams>& regressionParamSets);
 
 			template <size_t TotalNumParams>
@@ -339,33 +412,40 @@ namespace Regressors
 		template <class KernelType>
 		size_t const KernelRidgeRegression<KernelType>::NumTotalParams = NumRegressionParams + KernelType::NumKernelParams;
 		template <class KernelType>
-		RegressorTypes const KernelRidgeRegression<KernelType>::RegressorTypeEnum =
-			std::is_same<KernelType, KernelTypes::LinearKernel<typename KernelType::T>>::value ? RegressorTypes::LinearKernelRidgeRegression :
-			std::is_same<KernelType, KernelTypes::PolynomialKernel<typename KernelType::T>>::value ? RegressorTypes::PolynomialKernelRidgeRegression :
-			std::is_same<KernelType, KernelTypes::RadialBasisKernel<typename KernelType::T>>::value ? RegressorTypes::RadialBasisKernelRidgeRegression :
-			std::is_same<KernelType, KernelTypes::SigmoidKernel<typename KernelType::T>>::value ? RegressorTypes::SigmoidKernelRidgeRegression :
-			RegressorTypes::MAX_NUMBER_OF_RegressorTypes;
+		ERegressorTypes const KernelRidgeRegression<KernelType>::RegressorTypeEnum =
+			std::is_same<KernelType, KernelTypes::LinearKernel<typename KernelType::SampleType>>::value ? ERegressorTypes::LinearKernelRidgeRegression :
+			std::is_same<KernelType, KernelTypes::PolynomialKernel<typename KernelType::SampleType>>::value ? ERegressorTypes::PolynomialKernelRidgeRegression :
+			std::is_same<KernelType, KernelTypes::RadialBasisKernel<typename KernelType::SampleType>>::value ? ERegressorTypes::RadialBasisKernelRidgeRegression :
+			std::is_same<KernelType, KernelTypes::SigmoidKernel<typename KernelType::SampleType>>::value ? ERegressorTypes::SigmoidKernelRidgeRegression :
+			ERegressorTypes::MAX_NUMBER_OF_ERegressorTypes;
 
 		template <class KernelType>
 		size_t const SupportVectorRegression<KernelType>::NumRegressionParams = 4ull;
 		template <class KernelType>
 		size_t const SupportVectorRegression<KernelType>::NumTotalParams = NumRegressionParams + KernelType::NumKernelParams;
 		template <class KernelType>
-		RegressorTypes const SupportVectorRegression<KernelType>::RegressorTypeEnum =
-			std::is_same<KernelType, KernelTypes::LinearKernel<typename KernelType::T>>::value ? RegressorTypes::LinearSupportVectorRegression :
-			std::is_same<KernelType, KernelTypes::PolynomialKernel<typename KernelType::T>>::value ? RegressorTypes::PolynomialSupportVectorRegression :
-			std::is_same<KernelType, KernelTypes::RadialBasisKernel<typename KernelType::T>>::value ? RegressorTypes::RadialBasisSupportVectorRegression :
-			std::is_same<KernelType, KernelTypes::SigmoidKernel<typename KernelType::T>>::value ? RegressorTypes::SigmoidSupportVectorRegression :
-			RegressorTypes::MAX_NUMBER_OF_RegressorTypes;
+		ERegressorTypes const SupportVectorRegression<KernelType>::RegressorTypeEnum =
+			std::is_same<KernelType, KernelTypes::LinearKernel<typename KernelType::SampleType>>::value ? ERegressorTypes::LinearSupportVectorRegression :
+			std::is_same<KernelType, KernelTypes::PolynomialKernel<typename KernelType::SampleType>>::value ? ERegressorTypes::PolynomialSupportVectorRegression :
+			std::is_same<KernelType, KernelTypes::RadialBasisKernel<typename KernelType::SampleType>>::value ? ERegressorTypes::RadialBasisSupportVectorRegression :
+			std::is_same<KernelType, KernelTypes::SigmoidKernel<typename KernelType::SampleType>>::value ? ERegressorTypes::SigmoidSupportVectorRegression :
+			ERegressorTypes::MAX_NUMBER_OF_ERegressorTypes;
 
 		template <class ExtractorType>
 		size_t const RandomForestRegression<ExtractorType>::NumRegressionParams = 3ull;
 		template <class ExtractorType>
 		size_t const RandomForestRegression<ExtractorType>::NumTotalParams = NumRegressionParams + ExtractorType::NumExtractorParams;
 		template <class ExtractorType>
-		RegressorTypes const RandomForestRegression<ExtractorType>::RegressorTypeEnum =
-			std::is_same<ExtractorType, KernelTypes::DenseExtractor<typename ExtractorType::T>>::value ? RegressorTypes::DenseRandomForestRegression :
-			RegressorTypes::MAX_NUMBER_OF_RegressorTypes;
+		ERegressorTypes const RandomForestRegression<ExtractorType>::RegressorTypeEnum =
+			std::is_same<ExtractorType, KernelTypes::DenseExtractor<typename ExtractorType::SampleType>>::value ? ERegressorTypes::DenseRandomForestRegression :
+			ERegressorTypes::MAX_NUMBER_OF_ERegressorTypes;
+
+		template <class LinkFunctionType>
+		size_t const IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::NumRegressionParams = 4ull;
+		template <class LinkFunctionType>
+		size_t const IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::NumTotalParams = NumRegressionParams + LinkFunctionType::NumLinkFunctionParams;
+		template <class LinkFunctionType>
+		ERegressorTypes const IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::RegressorTypeEnum = ERegressorTypes::MAX_NUMBER_OF_ERegressorTypes;
 	}
 }
 

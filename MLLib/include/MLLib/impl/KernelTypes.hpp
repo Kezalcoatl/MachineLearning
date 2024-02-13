@@ -61,12 +61,6 @@ namespace Regressors
 		{
 		}
 
-		template <typename SampleType>
-		size_t LinearKernel<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
-		{
-			return 1u;
-		}
-
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		template <typename SampleType>
@@ -205,12 +199,6 @@ namespace Regressors
 			}
 		}
 
-		template <typename SampleType>
-		size_t PolynomialKernel<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
-		{
-			return cvTrainingParams.GammaToTry.size() * cvTrainingParams.CoeffToTry.size() * cvTrainingParams.DegreeToTry.size();
-		}
-
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		template <typename SampleType>
@@ -297,12 +285,6 @@ namespace Regressors
 			{
 				osTrainingParams.Gamma = optimiseParamsMap[mapOffset].second;
 			}
-		}
-
-		template <typename SampleType>
-		size_t RadialBasisKernel<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
-		{
-			return cvTrainingParams.GammaToTry.size();
 		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -418,12 +400,6 @@ namespace Regressors
 			}
 		}
 
-		template <typename SampleType>
-		size_t SigmoidKernel<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
-		{
-			return cvTrainingParams.GammaToTry.size() * cvTrainingParams.CoeffToTry.size();
-		}
-
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		template <typename SampleType>
@@ -481,12 +457,6 @@ namespace Regressors
 			size_t const mapOffset,
 			size_t& paramsOffset)
 		{
-		}
-
-		template <typename SampleType>
-		size_t DenseExtractor<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
-		{
-			return 1u;
 		}
 	}
 }

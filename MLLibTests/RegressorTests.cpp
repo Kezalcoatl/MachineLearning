@@ -25,6 +25,7 @@ TEST(SerializationDeserialization, RegressorTests)
 	typedef RegressionTypes::SupportVectorRegression<KernelTypes::RadialBasisKernel<SampleType>> RadialBasisSVR;
 	typedef RegressionTypes::SupportVectorRegression<KernelTypes::SigmoidKernel<SampleType>> SigmoidSVR;
 	typedef RegressionTypes::RandomForestRegression<KernelTypes::DenseExtractor<SampleType>> DenseRF;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::LogitLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearLogitIRLS;
 
 	static size_t const numExamples = 50;
 	static size_t const numOrdinates = 10;
@@ -42,12 +43,12 @@ TEST(SerializationDeserialization, RegressorTests)
 	}
 
 	std::string const randomSeed = "MLLib";
-	CrossValidationMetric const metric = CrossValidationMetric::SumSquareMean;
+	ECrossValidationMetric const metric = ECrossValidationMetric::SumSquareMean;
 	size_t const numFolds = 4;
 	size_t const maxNumCalls = 1000;
 	size_t const numThreads = 16;
 	std::stringstream regressorSS;
-
+	
 	ModifierTypes::NormaliserModifier<SampleType>::OneShotTrainingParams normaliserOSParams;
 	ModifierTypes::InputPCAModifier<SampleType>::OneShotTrainingParams PCAOSParams;
 	PCAOSParams.TargetVariance = 0.9;
@@ -173,4 +174,18 @@ TEST(SerializationDeserialization, RegressorTests)
 	decltype(denseRFRegressor) denseRFRegressor2;
 	deserialize(denseRFRegressor2, regressorSS);
 	EXPECT_EQ(GetMD5(denseRFRegressor), GetMD5(denseRFRegressor2));
+
+	regressorSS.clear();
+	std::vector<T> linearLogitIRLSDiagnostics;
+	LinearLogitIRLS::OneShotTrainingParams linearLogitIRLSOSParams;
+	linearLogitIRLSOSParams.ConvergenceTolerance = 1e-4;
+	linearLogitIRLSOSParams.Lambda = 0.1;
+	linearLogitIRLSOSParams.MaxBasisFunctions = 50;
+	linearLogitIRLSOSParams.MaxNumIterations = 100;
+	auto linearLogitIRLSRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<LinearLogitIRLS>(inputExamples, targetExamples, randomSeed, metric, numFolds, linearLogitIRLSDiagnostics, linearLogitIRLSOSParams, normaliserOSParams);
+	serialize(linearLogitIRLSRegressor, regressorSS);
+	decltype(linearLogitIRLSRegressor) linearLogitIRLSRegressor2;
+	deserialize(linearLogitIRLSRegressor2, regressorSS);
+	EXPECT_EQ(GetMD5(linearLogitIRLSRegressor), GetMD5(linearLogitIRLSRegressor2));
+
 }

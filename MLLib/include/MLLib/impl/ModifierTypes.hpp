@@ -4,18 +4,6 @@ namespace Regressors
 {
 	namespace ModifierTypes
 	{
-		template <class... ModifierCrossValidationTrainingTypes>
-		void ModifierComponentBase::IterateModifiers(std::tuple<ModifierCrossValidationTrainingTypes...> const& modifiersCrossValidationTrainingParams,
-			std::vector<std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>>& modifierOneShotTrainingParamsToTry)
-		{
-			if constexpr (sizeof...(ModifierCrossValidationTrainingTypes) > 0)
-			{
-				std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...> modifierTrainingParams;
-				using ModifierType = typename std::tuple_element<0, std::tuple<ModifierCrossValidationTrainingTypes...>>::type::ModifierType;
-				ModifierType::IterateModifierParams<0>(modifiersCrossValidationTrainingParams, modifierOneShotTrainingParamsToTry, modifierTrainingParams);
-			}
-		}
-
 		template <typename SampleType>
 		NormaliserModifier<SampleType>::OneShotTrainingParams::OneShotTrainingParams()
 		{
@@ -23,7 +11,7 @@ namespace Regressors
 		}
 
 		template <typename SampleType>
-		ModifierTypes NormaliserModifier<SampleType>::OneShotTrainingParams::GetModifierType() const
+		EModifierFunctionTypes NormaliserModifier<SampleType>::OneShotTrainingParams::GetModifierType() const
 		{
 			return NormaliserModifier::ModifierTypeEnum;
 		}
@@ -107,12 +95,6 @@ namespace Regressors
 			}
 		}
 
-		template <typename SampleType>
-		size_t NormaliserModifier<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvParams)
-		{
-			return 1u;
-		}
-
 		/////////////////////////////////////////////////////////////////////////
 
 		template <typename SampleType>
@@ -122,7 +104,7 @@ namespace Regressors
 		}
 
 		template <typename SampleType>
-		ModifierTypes InputPCAModifier<SampleType>::OneShotTrainingParams::GetModifierType() const
+		EModifierFunctionTypes InputPCAModifier<SampleType>::OneShotTrainingParams::GetModifierType() const
 		{
 			return InputPCAModifier::ModifierTypeEnum;
 		}
@@ -234,12 +216,6 @@ namespace Regressors
 			}
 		}
 
-		template <typename SampleType>
-		size_t InputPCAModifier<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
-		{
-			return cvTrainingParams.TargetVarianceToTry.size();
-		}
-
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		template <typename SampleType>
@@ -249,7 +225,7 @@ namespace Regressors
 		}
 
 		template <typename SampleType>
-		ModifierTypes FeatureSelectionModifier<SampleType>::OneShotTrainingParams::GetModifierType() const
+		EModifierFunctionTypes FeatureSelectionModifier<SampleType>::OneShotTrainingParams::GetModifierType() const
 		{
 			return FeatureSelectionModifier::ModifierTypeEnum;
 		}
@@ -392,12 +368,6 @@ namespace Regressors
 					mapOffset,
 					paramsOffset);
 			}
-		}
-
-		template <typename SampleType>
-		size_t FeatureSelectionModifier<SampleType>::NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams)
-		{
-			return cvTrainingParams.FeatureFractionsToTry.size();
 		}
 	}
 }

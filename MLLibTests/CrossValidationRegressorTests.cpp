@@ -25,6 +25,9 @@ TEST(CrossValidationTraining, RegressorTests)
 	typedef RegressionTypes::SupportVectorRegression<KernelTypes::RadialBasisKernel<SampleType>> RadialBasisSVR;
 	typedef RegressionTypes::SupportVectorRegression<KernelTypes::SigmoidKernel<SampleType>> SigmoidSVR;
 	typedef RegressionTypes::RandomForestRegression<KernelTypes::DenseExtractor<SampleType>> DenseRF;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::LogitLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearLogitIRLS;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::FourierLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearFourierIRLS;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::LagrangeLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearLagrangeIRLS;
 
 	static size_t const numExamples = 50;
 	static size_t const numOrdinates = 10;
@@ -42,34 +45,40 @@ TEST(CrossValidationTraining, RegressorTests)
 	}
 
 	std::string const randomSeed = "MLLib";
-	CrossValidationMetric const metric = CrossValidationMetric::SumSquareMean;
+	ECrossValidationMetric const metric = ECrossValidationMetric::SumSquareMean;
 	size_t const numFolds = 4;
 	size_t const numThreads = 16;
-	std::string const linearKRRRegressorMD5 = "a1f52f0c7439f8f13ccbd56af837ec02";
-	std::string const linearKRRDiagnosticsMD5 = "a6e4415cf02c1381f7be04dee5ee20b5";
-	std::string const polynomialKRRRegressorMD5 = "5e6afb1374c7393a932a9b6eff8cd658";
-	std::string const polynomialKRRDiagnosticsMD5 = "6baac8ddb78fb17845d13b4da170348e";
-	std::string const radialBasisKRRRegressorMD5 = "e7dcd8c017147a0e0815687919b84eb2";
-	std::string const radialBasisKRRDiagnosticsMD5 = "2cab643f15dac0b9a85dffe7885d9223";
-	std::string const sigmoidKRRRegressorMD5 = "bbb5cd62a14f622e4a0d44cdef71d0c7";
-	std::string const sigmoidKRRDiagnosticsMD5 = "2fd3b2a2b91fe414cbc286206069c98d";
-	std::string const linearSVRRegressorMD5 = "d9a568996852758d5d23c556d2173daf";
-	std::string const linearSVRDiagnosticsMD5 = "c10726199aa5d8d78a60d962e62fbaf9";
-	std::string const polynomialSVRRegressorMD5 = "83669b0f6178a085c48bf11ad1a53ffb";
-	std::string const polynomialSVRDiagnosticsMD5 = "c10726199aa5d8d78a60d962e62fbaf9";
-	std::string const radialBasisSVRRegressorMD5 = "a974d03f7d33d6d362d8e4bfa4aef889";
-	std::string const radialBasisSVRDiagnosticsMD5 = "cd0bcf7cac18bb305ca532dc27e02e0b";
-	std::string const sigmoidSVRRegressorMD5 = "92856c41a1c0287d66f698096433f00d";
-	std::string const sigmoidSVRDiagnosticsMD5 = "bbf078a8c6648a338fdec7c53ee2e3fe";
-	std::string const denseRFRegressorMD5 = "f6f21019febf9fe0455cbcff0ddbaf7d";
+	std::string const linearKRRRegressorMD5 = "01d0975dad2d88b3908e9c5bbc1379f1";
+	std::string const linearKRRDiagnosticsMD5 = "1ff023f4a6c549cda0083397d0986831";
+	std::string const polynomialKRRRegressorMD5 = "7a5d43adef3987ec9c55c06c53d03cfd";
+	std::string const polynomialKRRDiagnosticsMD5 = "a8879cb3594d530e4a17a38f02e1e225";
+	std::string const radialBasisKRRRegressorMD5 = "09b8634a60534767eb8bfdf411468707";
+	std::string const radialBasisKRRDiagnosticsMD5 = "3c2246bd20b4f201de45a28a3a3293ed";
+	std::string const sigmoidKRRRegressorMD5 = "ddaa8272963ba8c01c3fcc3a1772b313";
+	std::string const sigmoidKRRDiagnosticsMD5 = "ab6f88d27e0c4702adae2a1e3aed53ab";
+	std::string const linearSVRRegressorMD5 = "cb9986cedb0f358d664c1f7951b477df";
+	std::string const linearSVRDiagnosticsMD5 = "5754c786a1044105c0cbf1e4b430a72a";
+	std::string const polynomialSVRRegressorMD5 = "5006fd5bc68f112a5facea93f9ed3468";
+	std::string const polynomialSVRDiagnosticsMD5 = "5754c786a1044105c0cbf1e4b430a72a";
+	std::string const radialBasisSVRRegressorMD5 = "e449ef20f69f2e081e7335237fd33292";
+	std::string const radialBasisSVRDiagnosticsMD5 = "e4808470c2827efa985013ed42ac9f44";
+	std::string const sigmoidSVRRegressorMD5 = "3ab03644c67fc2bdaef1668d23d0aaf9";
+	std::string const sigmoidSVRDiagnosticsMD5 = "ae87e39274f21156ccf445b0f4491099";
+	std::string const denseRFRegressorMD5 = "832556f88cb9acece4dd3c377d8ecc84";
 	std::string const denseRFDiagnosticsMD5 = "b1f2d546bd20a9834d76731afdf7076d";
+	std::string const linearLogitIRLSRegressorMD5 = "";
+	std::string const linearLogitIRLSDiagnosticsMD5 = "";
+	std::string const linearFourierIRLSRegressorMD5 = "";
+	std::string const linearFourierIRLSDiagnosticsMD5 = "";
+	std::string const linearLagrangeIRLSRegressorMD5 = "";
+	std::string const linearLagrangeIRLSDiagnosticsMD5 = "";
 
 	ModifierTypes::NormaliserModifier<SampleType>::CrossValidationTrainingParams normaliserCVParams;
 	ModifierTypes::InputPCAModifier<SampleType>::CrossValidationTrainingParams PCACVParams;
 	PCACVParams.TargetVarianceToTry = { 0.6, 0.8 };
 	ModifierTypes::FeatureSelectionModifier<SampleType>::CrossValidationTrainingParams featureSelectionCVParams;
 	featureSelectionCVParams.FeatureFractionsToTry = { 0.7, 0.9 };
-	/*
+	
 	std::vector<T> linearKRRDiagnostics;
 	LinearKRR::CrossValidationTrainingParams linearKRRCVParams;
 	linearKRRCVParams.MaxBasisFunctionsToTry = { 200, 400 };
@@ -162,5 +171,34 @@ TEST(CrossValidationTraining, RegressorTests)
 	auto const denseRFRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<DenseRF>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, denseRFDiagnostics, denseRFCVParams, normaliserCVParams, featureSelectionCVParams, PCACVParams);
 	EXPECT_EQ(GetMD5(denseRFRegressor), denseRFRegressorMD5);
 	EXPECT_EQ(GetMD5(denseRFDiagnostics), denseRFDiagnosticsMD5);
-	*/
+
+	std::vector<T> linearLogitIRLSDiagnostics;
+	LinearLogitIRLS::CrossValidationTrainingParams linearLogitIRLSCVParams;
+	linearLogitIRLSCVParams.LambdaToTry = { 1.e-3, 0.1 };
+	linearLogitIRLSCVParams.MaxBasisFunctionsToTry = { 50, 100 };
+	linearLogitIRLSCVParams.MaxNumIterationsToTry = { 100 };
+	linearLogitIRLSCVParams.ConvergenceToleranceToTry = { 1e-4 };
+	auto const linearLogitIRLSRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<LinearLogitIRLS>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, linearLogitIRLSDiagnostics, linearLogitIRLSCVParams, featureSelectionCVParams, PCACVParams);
+	EXPECT_EQ(GetMD5(linearLogitIRLSRegressor), linearLogitIRLSRegressorMD5);
+	EXPECT_EQ(GetMD5(linearLogitIRLSDiagnostics), linearLogitIRLSDiagnosticsMD5);
+
+	std::vector<T> linearFourierIRLSDiagnostics;
+	LinearFourierIRLS::CrossValidationTrainingParams linearFourierIRLSCVParams;
+	linearFourierIRLSCVParams.LambdaToTry = { 1.e-3, 0.1 };
+	linearFourierIRLSCVParams.MaxBasisFunctionsToTry = { 50, 100 };
+	linearFourierIRLSCVParams.MaxNumIterationsToTry = { 100 };
+	linearFourierIRLSCVParams.ConvergenceToleranceToTry = { 1e-4 };
+	auto const linearFourierIRLSRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<LinearFourierIRLS>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, linearFourierIRLSDiagnostics, linearFourierIRLSCVParams, featureSelectionCVParams, PCACVParams);
+	EXPECT_EQ(GetMD5(linearFourierIRLSRegressor), linearFourierIRLSRegressorMD5);
+	EXPECT_EQ(GetMD5(linearFourierIRLSDiagnostics), linearFourierIRLSDiagnosticsMD5);
+
+	std::vector<T> linearLagrangeIRLSDiagnostics;
+	LinearLagrangeIRLS::CrossValidationTrainingParams linearLagrangeIRLSCVParams;
+	linearLagrangeIRLSCVParams.LambdaToTry = { 1.e-3, 0.1 };
+	linearLagrangeIRLSCVParams.MaxBasisFunctionsToTry = { 50, 100 };
+	linearLagrangeIRLSCVParams.MaxNumIterationsToTry = { 100 };
+	linearLagrangeIRLSCVParams.ConvergenceToleranceToTry = { 1e-4 };
+	auto const linearLagrangeIRLSRegressor = Regressors::RegressorTrainer::TrainRegressorCrossValidation<LinearLagrangeIRLS>(inputExamples, targetExamples, randomSeed, metric, numFolds, numThreads, linearLagrangeIRLSDiagnostics, linearLagrangeIRLSCVParams, featureSelectionCVParams, PCACVParams);
+	EXPECT_EQ(GetMD5(linearLagrangeIRLSRegressor), linearLagrangeIRLSRegressorMD5);
+	EXPECT_EQ(GetMD5(linearLagrangeIRLSDiagnostics), linearLagrangeIRLSDiagnosticsMD5);
 }

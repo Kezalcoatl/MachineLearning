@@ -4,50 +4,6 @@ namespace Regressors
 {
 	namespace RegressionTypes
 	{
-		template <class RegressionType, size_t I, class... ModifierOneShotTrainingParamsTypes>
-		static impl<RegressionType, typename ModifierOneShotTrainingParamsTypes::ModifierType::ModifierFunction...> RegressionComponentBase::TrainModifiersAndRegressor(std::vector<typename RegressionType::SampleType> const& inputExamples,
-			std::vector<typename RegressionType::SampleType::type> const& targetExamples,
-			typename RegressionType::OneShotTrainingParams const& regressionParams,
-			std::vector<typename RegressionType::SampleType::type>& diagnostics,
-			typename RegressionType::SampleType::type const& trainingError,
-			std::tuple<ModifierOneShotTrainingParamsTypes...> const& modifierOneShotParams,
-			std::tuple<typename ModifierOneShotTrainingParamsTypes::ModifierType::ModifierFunction...>& modifierFunctions)
-		{
-			if constexpr (I == sizeof...(ModifierOneShotTrainingParamsTypes))
-			{
-				return RegressionType::Train(inputExamples,
-					targetExamples,
-					regressionParams,
-					diagnostics,
-					trainingError,
-					modifierFunctions);
-			}
-			else
-			{
-				using ModifierType = typename std::tuple_element<I, std::tuple<ModifierOneShotTrainingParamsTypes...>>::type::ModifierType;
-				auto& modifier = std::get<I>(modifierFunctions);
-				auto const& params = std::get<I>(modifierOneShotParams);
-				ModifierType::TrainModifier(modifier, params, inputExamples, targetExamples);
-				auto examples(inputExamples);
-				for (auto& example : examples)
-				{
-					modifier(example);
-				}
-				return TrainModifiersAndRegressor<RegressionType, I + 1>(examples, targetExamples, regressionParams, diagnostics, trainingError, modifierOneShotParams, modifierFunctions);
-			}
-		}
-
-		template <class RegressionType, class... ModifierFunctionTypes>
-		static impl<RegressionType, ModifierFunctionTypes...> RegressionComponentBase::MakeRegressor(typename RegressionType::DecisionFunction const& function,
-			std::tuple<ModifierFunctionTypes...> const& modifiers,
-			typename RegressionType::SampleType::type const& trainingError,
-			typename RegressionType::OneShotTrainingParams const& regressorTrainingParams)
-		{
-			return impl<RegressionType, ModifierFunctionTypes...>(function, modifiers, trainingError, regressorTrainingParams);
-		}
-
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		template <class KernelType>
 		KernelRidgeRegression<KernelType>::OneShotTrainingParams::OneShotTrainingParams() : 
 			MaxBasisFunctions(400),
@@ -82,7 +38,7 @@ namespace Regressors
 		}
 
 		template <class KernelType>
-		RegressorTypes KernelRidgeRegression<KernelType>::OneShotTrainingParams::GetRegressionType() const
+		ERegressorTypes KernelRidgeRegression<KernelType>::OneShotTrainingParams::GetRegressionType() const
 		{
 			return KernelRidgeRegression::RegressorTypeEnum;
 		}
@@ -117,11 +73,11 @@ namespace Regressors
 			finalTrainer.set_kernel(KernelType::GetKernel(regressionTrainingParams.KernelOneShotTrainingParams));
 			finalTrainer.set_max_basis_size(regressionTrainingParams.MaxBasisFunctions);
 			finalTrainer.set_lambda(regressionTrainingParams.Lambda);
-			return RegressionComponentBase::MakeRegressor<KernelRidgeRegression>(finalTrainer.train(inputExamples, targetExamples, LeaveOneOutValues), modifierFunctions, trainingError, regressionTrainingParams);
+			return impl<KernelRidgeRegression<KernelType>, ModifierFunctionTypes...>(finalTrainer.train(inputExamples, targetExamples, LeaveOneOutValues), modifierFunctions, trainingError, regressionTrainingParams);
 		}
 
 		template <class KernelType>
-		size_t KernelRidgeRegression<KernelType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+		void KernelRidgeRegression<KernelType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 			std::vector<OneShotTrainingParams>& regressionParamSets)
 		{
 			DLIB_ASSERT(regressionCrossValidationTrainingParams.MaxBasisFunctionsToTry.size() > 0 && regressionCrossValidationTrainingParams.LambdaToTry.size() > 0,
@@ -137,7 +93,6 @@ namespace Regressors
 					KernelType::template IterateKernelParams<KernelRidgeRegression>(osTrainingParams, regressionCrossValidationTrainingParams.KernelCrossValidationTrainingParams, regressionParamSets);
 				}
 			}
-			return regressionCrossValidationTrainingParams.MaxBasisFunctionsToTry.size() * regressionCrossValidationTrainingParams.LambdaToTry.size() * KernelType::NumCrossValidationPermutations(regressionCrossValidationTrainingParams.KernelCrossValidationTrainingParams);
 		}
 
 		template <class KernelType> template <size_t TotalNumParams>
@@ -232,7 +187,7 @@ namespace Regressors
 		}
 
 		template <class KernelType>
-		RegressorTypes SupportVectorRegression<KernelType>::OneShotTrainingParams::GetRegressionType() const
+		ERegressorTypes SupportVectorRegression<KernelType>::OneShotTrainingParams::GetRegressionType() const
 		{
 			return SupportVectorRegression::RegressorTypeEnum;
 		}
@@ -281,11 +236,11 @@ namespace Regressors
 			{
 				Residuals[i] = df(inputExamples[i]) - targetExamples[i];
 			}
-			return RegressionComponentBase::MakeRegressor<SupportVectorRegression>(df, modifierFunctions, trainingError, regressionTrainingParams);
+			return impl<SupportVectorRegression<KernelType>, ModifierFunctionTypes...>(df, modifierFunctions, trainingError, regressionTrainingParams);
 		}
 
 		template <class KernelType>
-		size_t SupportVectorRegression<KernelType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+		void SupportVectorRegression<KernelType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 			std::vector<OneShotTrainingParams>& regressionParamSets)
 		{
 			DLIB_ASSERT(regressionCrossValidationTrainingParams.CToTry.size() > 0 && regressionCrossValidationTrainingParams.EpsilonToTry.size() > 0 && regressionCrossValidationTrainingParams.EpsilonInsensitivityToTry.size() > 0 && regressionCrossValidationTrainingParams.CacheSizeToTry.size() > 0,
@@ -309,7 +264,6 @@ namespace Regressors
 					}
 				}
 			}
-			return regressionCrossValidationTrainingParams.CToTry.size() * regressionCrossValidationTrainingParams.EpsilonToTry.size() * regressionCrossValidationTrainingParams.EpsilonInsensitivityToTry.size() * regressionCrossValidationTrainingParams.CacheSizeToTry.size() * KernelType::NumCrossValidationPermutations(regressionCrossValidationTrainingParams.KernelCrossValidationTrainingParams);
 		}
 
 		template <class KernelType> template <size_t TotalNumParams>
@@ -412,7 +366,7 @@ namespace Regressors
 		}
 
 		template <class ExtractorType>
-		RegressorTypes RandomForestRegression<ExtractorType>::OneShotTrainingParams::GetRegressionType() const
+		ERegressorTypes RandomForestRegression<ExtractorType>::OneShotTrainingParams::GetRegressionType() const
 		{
 			return RandomForestRegression::RegressorTypeEnum;
 		}
@@ -451,11 +405,11 @@ namespace Regressors
 			finalTrainer.set_num_trees(regressionTrainingParams.NumTrees);
 			finalTrainer.set_min_samples_per_leaf(regressionTrainingParams.MinSamplesPerLeaf);
 			finalTrainer.set_feature_subsampling_fraction(regressionTrainingParams.SubsamplingFraction);
-			return RegressionComponentBase::MakeRegressor<RandomForestRegression>(finalTrainer.train(inputExamples, targetExamples, OutOfBagValues), modifierFunctions, trainingError, regressionTrainingParams);
+			return impl<RandomForestRegression<ExtractorType>, ModifierFunctionTypes...>(finalTrainer.train(inputExamples, targetExamples, OutOfBagValues), modifierFunctions, trainingError, regressionTrainingParams);
 		}
 
 		template <class ExtractorType>
-		size_t RandomForestRegression<ExtractorType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+		void RandomForestRegression<ExtractorType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
 			std::vector<OneShotTrainingParams>& regressionParamSets)
 		{
 			DLIB_ASSERT(regressionCrossValidationTrainingParams.NumTreesToTry.size() > 0 && regressionCrossValidationTrainingParams.MinSamplesPerLeafToTry.size() > 0 && regressionCrossValidationTrainingParams.SubsamplingFractionToTry.size() > 0,
@@ -475,10 +429,6 @@ namespace Regressors
 					}
 				}
 			}
-			return regressionCrossValidationTrainingParams.NumTreesToTry.size() * 
-				regressionCrossValidationTrainingParams.MinSamplesPerLeafToTry.size() * 
-				regressionCrossValidationTrainingParams.SubsamplingFractionToTry.size() * 
-				ExtractorType::NumCrossValidationPermutations(regressionCrossValidationTrainingParams.ExtractorCrossValidationTrainingParams);
 		}
 
 		template <class ExtractorType> template <size_t TotalNumParams>
@@ -524,6 +474,202 @@ namespace Regressors
 			optimiseParamsMap[2].first = fmgTrainingParams.LowerSubsamplingFraction != fmgTrainingParams.UpperSubsamplingFraction;
 			optimiseParamsMap[2].second = fmgTrainingParams.LowerSubsamplingFraction;
 			ExtractorType::ConfigureMapping(fmgTrainingParams.ExtractorFindMinGlobalTrainingParams, optimiseParamsMap, NumRegressionParams);
+		}
+
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		template <class LinkFunctionType>
+		IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::OneShotTrainingParams::OneShotTrainingParams() :
+			MaxNumIterations(100),
+			ConvergenceTolerance(1.e-3),
+			MaxBasisFunctions(400),
+			Lambda(1.e-6)
+		{
+		}
+
+		template <class LinkFunctionType> template <size_t TotalNumParams>
+		IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::OneShotTrainingParams::OneShotTrainingParams(col_vector<T> const& vecParams,
+			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
+			size_t& paramsOffset)
+		{
+			if (optimiseParamsMap[0].first)
+			{
+				MaxNumIterations = vecParams(paramsOffset);
+				++paramsOffset;
+			}
+			else
+			{
+				MaxNumIterations = optimiseParamsMap[0].second;
+			}
+			if (optimiseParamsMap[1].first)
+			{
+				ConvergenceTolerance = vecParams(paramsOffset);
+				++paramsOffset;
+			}
+			else
+			{
+				ConvergenceTolerance = optimiseParamsMap[0].second;
+			}
+			if (optimiseParamsMap[2].first)
+			{
+				MaxBasisFunctions = vecParams(paramsOffset);
+				++paramsOffset;
+			}
+			else
+			{
+				MaxBasisFunctions = optimiseParamsMap[0].second;
+			}
+			if (optimiseParamsMap[3].first)
+			{
+				Lambda = vecParams(paramsOffset);
+				++paramsOffset;
+			}
+			else
+			{
+				Lambda = optimiseParamsMap[1].second;
+			}
+			LinkFunctionType::UnpackParameters(LinkFunctionOneShotTrainingParams, vecParams, optimiseParamsMap, NumRegressionParams, paramsOffset);
+			KernelType::UnpackParameters(KernelOneShotTrainingParams, vecParams, optimiseParamsMap, NumRegressionParams + LinkFunctionType::NumLinkFunctionParams, paramsOffset);
+		}
+
+		template <class LinkFunctionType>
+		ERegressorTypes IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::OneShotTrainingParams::GetRegressionType() const
+		{
+			return IterativelyReweightedLeastSquaresRegression::RegressorTypeEnum;
+		}
+
+		template <class LinkFunctionType>
+		IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::CrossValidationTrainingParams::CrossValidationTrainingParams()
+		{
+			OneShotTrainingParams temp;
+			MaxNumIterationsToTry = { temp.MaxNumIterations };
+			ConvergenceToleranceToTry = { temp.ConvergenceTolerance };
+			MaxBasisFunctionsToTry = { temp.MaxBasisFunctions };
+			LambdaToTry = { temp.Lambda };
+		}
+
+		template <class LinkFunctionType>
+		IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::FindMinGlobalTrainingParams::FindMinGlobalTrainingParams()
+		{
+			OneShotTrainingParams temp;
+			LowerMaxNumIterations = temp.MaxNumIterations;
+			UpperMaxNumIterations = temp.MaxNumIterations;
+			LowerConvergenceTolerance = temp.ConvergenceTolerance;
+			UpperConvergenceTolerance = temp.ConvergenceTolerance;
+			LowerMaxBasisFunctions = temp.MaxBasisFunctions;
+			UpperMaxBasisFunctions = temp.MaxBasisFunctions;
+			LowerLambda = temp.Lambda;
+			UpperLambda = temp.Lambda;
+		}
+
+		template <class LinkFunctionType> template <class... ModifierFunctionTypes>
+		static impl<IterativelyReweightedLeastSquaresRegression<LinkFunctionType>, ModifierFunctionTypes...> IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::Train(std::vector<SampleType> const& inputExamples,
+			std::vector<T> const& targetExamples,
+			OneShotTrainingParams const& regressionTrainingParams,
+			std::vector<T>& Residuals,
+			T const& trainingError,
+			std::tuple<ModifierFunctionTypes...> const& modifierFunctions)
+		{
+			GKMTrainer<LinkFunctionType> finalTrainer;
+			finalTrainer.SetLinkFunctionParameters(regressionTrainingParams.LinkFunctionOneShotTrainingParams);
+			finalTrainer.SetKernel(LinkFunctionType::KernelType::GetKernel(regressionTrainingParams.KernelOneShotTrainingParams));
+			finalTrainer.SetMaxBasisFunctions(regressionTrainingParams.MaxBasisFunctions);
+			finalTrainer.SetLambda(regressionTrainingParams.Lambda);
+			finalTrainer.SetMaxNumIterations(regressionTrainingParams.MaxNumIterations);
+			finalTrainer.SetConvergenceTolerance(regressionTrainingParams.ConvergenceTolerance);
+			DecisionFunction const df = finalTrainer.Train(inputExamples, targetExamples);
+			Residuals.resize(targetExamples.size());
+			for (size_t i = 0; i < targetExamples.size(); ++i)
+			{
+				Residuals[i] = df(inputExamples[i]) - targetExamples[i];
+			}
+			return impl<IterativelyReweightedLeastSquaresRegression<LinkFunctionType>, ModifierFunctionTypes...>(df, modifierFunctions, trainingError, regressionTrainingParams);
+		}
+
+		template <class LinkFunctionType>
+		void IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::IterateRegressionParams(CrossValidationTrainingParams const& regressionCrossValidationTrainingParams,
+			std::vector<OneShotTrainingParams>& regressionParamSets)
+		{
+			DLIB_ASSERT(regressionCrossValidationTrainingParams.MaxNumIterationsToTry.size() > 0
+				&& regressionCrossValidationTrainingParams.ConvergenceToleranceToTry.size() > 0
+				&& regressionCrossValidationTrainingParams.MaxBasisFunctionsToTry.size() > 0
+				&& regressionCrossValidationTrainingParams.LambdaToTry.size() > 0,
+				"Every regression parameter must have at least one value to try for cross-validation.");
+
+			OneShotTrainingParams osTrainingParams;
+			for (const auto& mni : regressionCrossValidationTrainingParams.MaxNumIterationsToTry)
+			{
+				osTrainingParams.MaxNumIterations = mni;
+				for (const auto& ct : regressionCrossValidationTrainingParams.ConvergenceToleranceToTry)
+				{
+					osTrainingParams.ConvergenceTolerance = ct;
+					for (const auto& mbf : regressionCrossValidationTrainingParams.MaxBasisFunctionsToTry)
+					{
+						osTrainingParams.MaxBasisFunctions = mbf;
+						for (const auto& l : regressionCrossValidationTrainingParams.LambdaToTry)
+						{
+							osTrainingParams.Lambda = l;
+							LinkFunctionType::template IterateLinkFunctionParams<IterativelyReweightedLeastSquaresRegression>(osTrainingParams, regressionCrossValidationTrainingParams.LinkFunctionCrossValidationTrainingParams, regressionCrossValidationTrainingParams.KernelCrossValidationTrainingParams, regressionParamSets);
+						}
+					}
+				}
+			}
+		}
+
+		template <class LinkFunctionType> template <size_t TotalNumParams>
+		static void IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::PackageParameters(col_vector<T>& lowerBound,
+			col_vector<T>& upperBound,
+			std::vector<bool>& isIntegerParam,
+			FindMinGlobalTrainingParams const& fmgTrainingParams,
+			std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
+			size_t& paramsOffset)
+		{
+			if (optimiseParamsMap[0].first)
+			{
+				lowerBound(paramsOffset) = fmgTrainingParams.LowerMaxNumIterations;
+				upperBound(paramsOffset) = fmgTrainingParams.UpperMaxNumIterations;
+				isIntegerParam[paramsOffset] = true;
+				++paramsOffset;
+			}
+			if (optimiseParamsMap[1].first)
+			{
+				lowerBound(paramsOffset) = fmgTrainingParams.LowerConvergenceTolerance;
+				upperBound(paramsOffset) = fmgTrainingParams.UpperConvergenceTolerance;
+				isIntegerParam[paramsOffset] = false;
+				++paramsOffset;
+			}
+			if (optimiseParamsMap[2].first)
+			{
+				lowerBound(paramsOffset) = fmgTrainingParams.LowerMaxBasisFunctions;
+				upperBound(paramsOffset) = fmgTrainingParams.UpperMaxBasisFunctions;
+				isIntegerParam[paramsOffset] = true;
+				++paramsOffset;
+			}
+			if (optimiseParamsMap[3].first)
+			{
+				lowerBound(paramsOffset) = fmgTrainingParams.LowerLambda;
+				upperBound(paramsOffset) = fmgTrainingParams.UpperLambda;
+				isIntegerParam[paramsOffset] = false;
+				++paramsOffset;
+			}
+			LinkFunctionType::PackageParameters(NumRegressionParams, lowerBound, upperBound, isIntegerParam, fmgTrainingParams.LinkFunctionFindMinGlobalTrainingParams, optimiseParamsMap, paramsOffset);
+			KernelType::PackageParameters(NumRegressionParams + LinkFunctionType::NumLinkFunctionParams, lowerBound, upperBound, isIntegerParam, fmgTrainingParams.KernelFindMinGlobalTrainingParams, optimiseParamsMap, paramsOffset);
+		}
+
+		template <class LinkFunctionType> template <size_t TotalNumParams>
+		static void IterativelyReweightedLeastSquaresRegression<LinkFunctionType>::ConfigureMapping(FindMinGlobalTrainingParams const& fmgTrainingParams,
+			std::array<std::pair<bool, T>, TotalNumParams>& optimiseParamsMap)
+		{
+			optimiseParamsMap[0].first = fmgTrainingParams.LowerMaxNumIterations != fmgTrainingParams.UpperMaxNumIterations;
+			optimiseParamsMap[0].second = fmgTrainingParams.LowerMaxNumIterations;
+			optimiseParamsMap[1].first = fmgTrainingParams.LowerConvergenceTolerance != fmgTrainingParams.UpperConvergenceTolerance;
+			optimiseParamsMap[1].second = fmgTrainingParams.LowerConvergenceTolerance;
+			optimiseParamsMap[2].first = fmgTrainingParams.LowerMaxBasisFunctions != fmgTrainingParams.UpperMaxBasisFunctions;
+			optimiseParamsMap[2].second = fmgTrainingParams.LowerMaxBasisFunctions;
+			optimiseParamsMap[3].first = fmgTrainingParams.LowerLambda != fmgTrainingParams.UpperLambda;
+			optimiseParamsMap[3].second = fmgTrainingParams.LowerLambda;
+			LinkFunctionType::ConfigureMapping(fmgTrainingParams.LinkFunctionFindMinGlobalTrainingParams, optimiseParamsMap, NumRegressionParams);
+			KernelType::ConfigureMapping(fmgTrainingParams.KernelFindMinGlobalTrainingParams, optimiseParamsMap, NumRegressionParams + LinkFunctionType::NumLinkFunctionParams);
 		}
 	}
 }

@@ -11,12 +11,16 @@ set(sources
 	include/MLLib/KernelTypes.h
 	include/MLLib/ModifierTypes.h
 	include/MLLib/PrincipalComponentAnalysis.h
+	include/MLLib/LinkFunctionTypes.h
+	include/MLLib/GKMTrainer.h
 
 	include/MLLib/impl/Regressor.hpp
 	include/MLLib/impl/RegressionTypes.hpp
 	include/MLLib/impl/KernelTypes.hpp
 	include/MLLib/impl/ModifierTypes.hpp
 	include/MLLib/impl/PrincipalComponentAnalysis.hpp
+	include/MLLib/impl/LinkFunctionTypes.hpp
+	include/MLLib/impl/GKMTrainer.hpp
 )
 
 add_library(${PROJECT_NAME} ${sources})

@@ -5,44 +5,29 @@
 
 namespace Regressors
 {
+	enum class EModifierFunctionTypes;
+
 	namespace ModifierTypes
 	{
-		DECLARE_ENUM(ModifierTypes,
-			normaliser,
-			inputPCA,
-			featureSelection);
-
-		class ModifierComponentBase
-		{
-		public:
-			ModifierComponentBase() = delete;
-
-			struct ModifierOneShotTrainingParamsBase
-			{
-			public:
-				virtual ModifierTypes GetModifierType() const = 0;
-			};
-
-			template <class... ModifierCrossValidationTrainingTypes>
-			static void IterateModifiers(std::tuple<ModifierCrossValidationTrainingTypes...> const& modifiersCrossValidationTrainingParams,
-				std::vector<std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>>& modifierOneShotTrainingParamsToTry);
-		};
+		template <class... ModifierCrossValidationTrainingTypes>
+		static void IterateModifiers(std::tuple<ModifierCrossValidationTrainingTypes...> const& modifiersCrossValidationTrainingParams,
+			std::vector<std::tuple<typename ModifierCrossValidationTrainingTypes::ModifierType::OneShotTrainingParams...>>& modifierOneShotTrainingParamsToTry);
 
 		template <typename SampleType>
 		class NormaliserModifier
 		{
 		public:
 			typedef typename SampleType::type T;
-			static ModifierTypes const ModifierTypeEnum;
+			static EModifierFunctionTypes const ModifierTypeEnum;
 			static size_t const NumModifierParams;
 
-			struct OneShotTrainingParams : public ModifierComponentBase::ModifierOneShotTrainingParamsBase
+			struct OneShotTrainingParams : public RegressorTrainer::ModifierOneShotTrainingParamsBase
 			{
 				typedef NormaliserModifier ModifierType;
 
 				OneShotTrainingParams();
 
-				ModifierTypes GetModifierType() const override;
+				EModifierFunctionTypes GetModifierType() const override;
 
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{
@@ -115,8 +100,6 @@ namespace Regressors
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 				size_t const mapOffset,
 				size_t& paramsOffset);
-
-			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		template <typename SampleType>
@@ -124,17 +107,17 @@ namespace Regressors
 		{
 		public:
 			typedef typename SampleType::type T;
-			static const ModifierTypes ModifierTypeEnum;
+			static const EModifierFunctionTypes ModifierTypeEnum;
 			static const size_t NumModifierParams;
 
-			struct OneShotTrainingParams : public ModifierComponentBase::ModifierOneShotTrainingParamsBase
+			struct OneShotTrainingParams : public RegressorTrainer::ModifierOneShotTrainingParamsBase
 			{
 				typedef InputPCAModifier ModifierType;
 				T TargetVariance;
 
 				OneShotTrainingParams();
 
-				ModifierTypes GetModifierType() const override;
+				EModifierFunctionTypes GetModifierType() const override;
 
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{
@@ -212,8 +195,6 @@ namespace Regressors
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 				size_t const mapOffset,
 				size_t& paramsOffset);
-
-			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		template <typename SampleType>
@@ -221,17 +202,17 @@ namespace Regressors
 		{
 		public:
 			typedef typename SampleType::type T;
-			static const ModifierTypes ModifierTypeEnum;
+			static const EModifierFunctionTypes ModifierTypeEnum;
 			static const size_t NumModifierParams;
 
-			struct OneShotTrainingParams : public ModifierComponentBase::ModifierOneShotTrainingParamsBase
+			struct OneShotTrainingParams : public RegressorTrainer::ModifierOneShotTrainingParamsBase
 			{
 				typedef FeatureSelectionModifier ModifierType;
 				T FeatureFraction;
 
 				OneShotTrainingParams();
 
-				ModifierTypes GetModifierType() const override;
+				EModifierFunctionTypes GetModifierType() const override;
 
 				friend void serialize(OneShotTrainingParams const& item, std::ostream& out)
 				{
@@ -313,22 +294,20 @@ namespace Regressors
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 				size_t const mapOffset,
 				size_t& paramsOffset);
-
-			static size_t NumCrossValidationPermutations(const CrossValidationTrainingParams& cvParams);
 		};
 
 		template <typename SampleType>
 		size_t const NormaliserModifier<SampleType>::NumModifierParams = 0ull;
 		template <typename SampleType>
-		ModifierTypes const NormaliserModifier<SampleType>::ModifierTypeEnum = ModifierTypes::normaliser;
+		EModifierFunctionTypes const NormaliserModifier<SampleType>::ModifierTypeEnum = EModifierFunctionTypes::normaliser;
 		template <typename SampleType>
 		size_t const InputPCAModifier<SampleType>::NumModifierParams = 1ull;
 		template <typename SampleType>
-		ModifierTypes const InputPCAModifier<SampleType>::ModifierTypeEnum = ModifierTypes::inputPCA;
+		EModifierFunctionTypes const InputPCAModifier<SampleType>::ModifierTypeEnum = EModifierFunctionTypes::inputPCA;
 		template <typename SampleType>
 		size_t const FeatureSelectionModifier<SampleType>::NumModifierParams = 1ull;
 		template <typename SampleType>
-		ModifierTypes const FeatureSelectionModifier<SampleType>::ModifierTypeEnum = ModifierTypes::featureSelection;
+		EModifierFunctionTypes const FeatureSelectionModifier<SampleType>::ModifierTypeEnum = EModifierFunctionTypes::featureSelection;
 	}
 }
 

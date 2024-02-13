@@ -69,8 +69,6 @@ namespace Regressors
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 				size_t const mapOffset,
 				size_t& paramsOffset);
-
-			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -158,8 +156,6 @@ namespace Regressors
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 				size_t const mapOffset,
 				size_t& paramsOffset);
-
-			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -235,8 +231,6 @@ namespace Regressors
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 				size_t const mapOffset,
 				size_t& paramsOffset);
-
-			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -318,8 +312,6 @@ namespace Regressors
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 				size_t const mapOffset,
 				size_t& paramsOffset);
-
-			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -386,20 +378,18 @@ namespace Regressors
 				std::array<std::pair<bool, T>, TotalNumParams> const& optimiseParamsMap,
 				size_t const mapOffset,
 				size_t& paramsOffset);
-
-			static size_t NumCrossValidationPermutations(CrossValidationTrainingParams const& cvTrainingParams);
 		};
 
-		template <typename T>
-		size_t const LinearKernel<T>::NumKernelParams = 0ull;
-		template <typename T>
-		size_t const PolynomialKernel<T>::NumKernelParams = 3ull;
-		template <typename T>
-		size_t const RadialBasisKernel<T>::NumKernelParams = 1ull;
-		template <typename T>
-		size_t const SigmoidKernel<T>::NumKernelParams = 2ull;
-		template <typename T>
-		size_t const DenseExtractor<T>::NumExtractorParams = 0ull;
+		template <typename SampleType>
+		size_t const LinearKernel<SampleType>::NumKernelParams = 0ull;
+		template <typename SampleType>
+		size_t const PolynomialKernel<SampleType>::NumKernelParams = 3ull;
+		template <typename SampleType>
+		size_t const RadialBasisKernel<SampleType>::NumKernelParams = 1ull;
+		template <typename SampleType>
+		size_t const SigmoidKernel<SampleType>::NumKernelParams = 2ull;
+		template <typename SampleType>
+		size_t const DenseExtractor<SampleType>::NumExtractorParams = 0ull;
 	}
 }
 

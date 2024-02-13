@@ -25,12 +25,21 @@ TEST(OneShotTraining, RegressorTests)
 	typedef RegressionTypes::SupportVectorRegression<KernelTypes::RadialBasisKernel<SampleType>> RadialBasisSVR;
 	typedef RegressionTypes::SupportVectorRegression<KernelTypes::SigmoidKernel<SampleType>> SigmoidSVR;
 	typedef RegressionTypes::RandomForestRegression<KernelTypes::DenseExtractor<SampleType>> DenseRF;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::LogitLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearLogitIRLS;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::FourierLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearFourierIRLS;
+	typedef RegressionTypes::IterativelyReweightedLeastSquaresRegression<LinkFunctionTypes::LagrangeLinkFunction<KernelTypes::LinearKernel<SampleType>>> LinearLagrangeIRLS;
 
 	static size_t const numExamples = 50;
 	static size_t const numOrdinates = 10;
 
 	std::vector<SampleType> inputExamples(numExamples, SampleType(numOrdinates));
 	std::vector<T> targetExamples(numExamples);
+	std::vector<SampleType> binaryClassificationInputExamples(numExamples, SampleType(1));
+	std::vector<T> binaryClassificationTargetExamples(numExamples);
+
+	std::string const randomSeed = "MLLib";
+	dlib::rand RNG(randomSeed);
+
 	for (size_t e = 0; e < numExamples; ++e)
 	{
 		for (size_t o = 0; o < numOrdinates; ++o)
@@ -39,32 +48,39 @@ TEST(OneShotTraining, RegressorTests)
 			inputExamples[e](o) = std::sin(sinArg * sinArg) * std::exp(static_cast<T>(o));
 		}
 		targetExamples[e] = static_cast<T>(e + 1) + std::sin(static_cast<T>(e) * 0.1 * dlib::pi * 2.0);
+		binaryClassificationInputExamples[e](0) = std::sin(static_cast<T>(e));
+		binaryClassificationTargetExamples[e] = /*RNG.get_double_in_range(0.0, 0.1) +*/ binaryClassificationInputExamples[e](0) > 0 ? 1.0 : 0.0;
 	}
 
-	std::string const randomSeed = "MLLib";
-	CrossValidationMetric const metric = CrossValidationMetric::SumSquareMean;
+	ECrossValidationMetric const metric = ECrossValidationMetric::SumSquareMean;
 	size_t const numFolds = 4;
 	size_t const maxNumCalls = 1000;
 	size_t const numThreads = 16;
-	std::string const linearKRRRegressorMD5 = "3ee061dc9c21c0fb86dd372b887ebf2b";
-	std::string const linearKRRDiagnosticsMD5 = "b3fea5b0c03d4aafb817e7f38272bf0f";
-	std::string const polynomialKRRRegressorMD5 = "6195121f14edef73c5356df546dcb1d0";
-	std::string const polynomialKRRDiagnosticsMD5 = "b3fea5b0c03d4aafb817e7f38272bf0f";
-	std::string const radialBasisKRRRegressorMD5 = "a3cef6e7f2ab31344ce478011f8e23da";
-	std::string const radialBasisKRRDiagnosticsMD5 = "152510c1200a9c21bdbd80e02ece6918";
-	std::string const sigmoidKRRRegressorMD5 = "6f922da169106633872f790a27119d65";
-	std::string const sigmoidKRRDiagnosticsMD5 = "67bd96ab0cead9ad0706eec832a6d7a5";
-	std::string const linearSVRRegressorMD5 = "9006d04a29e99b41dcfd31b61888fd69";
-	std::string const linearSVRDiagnosticsMD5 = "c10726199aa5d8d78a60d962e62fbaf9";
-	std::string const polynomialSVRRegressorMD5 = "94512b091cdb7b284e5039a0aeddaeee";
-	std::string const polynomialSVRDiagnosticsMD5 = "c10726199aa5d8d78a60d962e62fbaf9";
-	std::string const radialBasisSVRRegressorMD5 = "04259b503902a942a551677461bd03bd";
-	std::string const radialBasisSVRDiagnosticsMD5 = "ab52eb8ef6aaeb0acc2f0f471986b314";
-	std::string const sigmoidSVRRegressorMD5 = "79cdc6eb1551e0c360ab05676d70d0d2";
-	std::string const sigmoidSVRDiagnosticsMD5 = "a119c2879cbbf92c29575d8e0518bd63";
-	std::string const denseRFRegressorMD5 = "35b8b7c53a53f3450317714a4e090300";
-	std::string const denseRFDiagnosticsMD5 = "8dce9be578d78c26ac25bb27fed929bd";
-	/*
+	std::string const linearKRRRegressorMD5 = "a8524cda078d2dfc1e97d0059b8f725e";
+	std::string const linearKRRDiagnosticsMD5 = "1ff023f4a6c549cda0083397d0986831";
+	std::string const polynomialKRRRegressorMD5 = "4c1b9431824cc62496d98c8d4ebe702a";
+	std::string const polynomialKRRDiagnosticsMD5 = "1ff023f4a6c549cda0083397d0986831";
+	std::string const radialBasisKRRRegressorMD5 = "67db812ba59c98796dc4c6ba7f144165";
+	std::string const radialBasisKRRDiagnosticsMD5 = "a43429ddc4f1c871091f8d9bceff66f9";
+	std::string const sigmoidKRRRegressorMD5 = "f524fc018acf3a98b9b9b08118e5f24a";
+	std::string const sigmoidKRRDiagnosticsMD5 = "e4f98cb09b2300a8134b9df28fddbc13";
+	std::string const linearSVRRegressorMD5 = "99d122c3add73b5177043da2459ea977";
+	std::string const linearSVRDiagnosticsMD5 = "5754c786a1044105c0cbf1e4b430a72a";
+	std::string const polynomialSVRRegressorMD5 = "e2ea42d340d2966d788b330c3a5102d9";
+	std::string const polynomialSVRDiagnosticsMD5 = "5754c786a1044105c0cbf1e4b430a72a";
+	std::string const radialBasisSVRRegressorMD5 = "1b6cbf0e6885bdd5df56f7b6af589d9e";
+	std::string const radialBasisSVRDiagnosticsMD5 = "e4808470c2827efa985013ed42ac9f44";
+	std::string const sigmoidSVRRegressorMD5 = "ed519c161597a73310b351b33c0f9b55";
+	std::string const sigmoidSVRDiagnosticsMD5 = "e1d57e342b441896cf4d6af5a04ab582";
+	std::string const denseRFRegressorMD5 = "b11ab694fe00a83557798be840533d2c";
+	std::string const denseRFDiagnosticsMD5 = "6b14f26c45926af5e1f92821e4c12690";
+	std::string const linearLogitIRLSRegressorMD5 = "";
+	std::string const linearLogitIRLSDiagnosticsMD5 = "";
+	std::string const linearFourierIRLSRegressorMD5 = "";
+	std::string const linearFourierIRLSDiagnosticsMD5 = "";
+	std::string const linearLagrangeIRLSRegressorMD5 = "";
+	std::string const linearLagrangeIRLSDiagnosticsMD5 = "";
+
 	ModifierTypes::NormaliserModifier<SampleType>::OneShotTrainingParams normaliserOSParams;
 	ModifierTypes::InputPCAModifier<SampleType>::OneShotTrainingParams PCAOSParams;
 	PCAOSParams.TargetVariance = 0.9;
@@ -163,5 +179,40 @@ TEST(OneShotTraining, RegressorTests)
 	auto const denseRFRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<DenseRF>(inputExamples, targetExamples, randomSeed, metric, numFolds, denseRFDiagnostics, denseRFOSParams, normaliserOSParams, featureSelectionOSParams, PCAOSParams);
 	EXPECT_EQ(GetMD5(denseRFRegressor), denseRFRegressorMD5);
 	EXPECT_EQ(GetMD5(denseRFDiagnostics), denseRFDiagnosticsMD5);
-	*/
+
+	std::vector<T> linearLogitIRLSDiagnostics;
+	LinearLogitIRLS::OneShotTrainingParams linearLogitIRLSOSParams;
+	linearLogitIRLSOSParams.MaxNumIterations = 100;
+	linearLogitIRLSOSParams.ConvergenceTolerance = 1.e-4;
+	linearLogitIRLSOSParams.MaxBasisFunctions = 100;
+	linearLogitIRLSOSParams.Lambda = 1.e-3;
+	auto const linearLogitIRLSRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<LinearLogitIRLS>(binaryClassificationInputExamples, binaryClassificationTargetExamples, randomSeed, metric, numFolds, linearLogitIRLSDiagnostics, linearLogitIRLSOSParams);
+	EXPECT_EQ(GetMD5(linearLogitIRLSRegressor), linearLogitIRLSRegressorMD5);
+	EXPECT_EQ(GetMD5(linearLogitIRLSDiagnostics), linearLogitIRLSDiagnosticsMD5);
+	
+	std::vector<T> linearFourierIRLSDiagnostics;
+	LinearFourierIRLS::OneShotTrainingParams linearFourierIRLSOSParams;
+	linearFourierIRLSOSParams.MaxNumIterations = 100;
+	linearFourierIRLSOSParams.ConvergenceTolerance = 1.e-4;
+	linearFourierIRLSOSParams.MaxBasisFunctions = 100;
+	linearFourierIRLSOSParams.Lambda = 1.e-3;
+	linearFourierIRLSOSParams.LinkFunctionOneShotTrainingParams.NumTerms = 38;
+	std::vector<SampleType> fourierExamples(50, SampleType(1));
+	for (size_t i = 0; i < fourierExamples.size(); ++i)
+	{
+		fourierExamples[i](0) = static_cast<T>(i);
+	}
+	auto const linearFourierIRLSRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<LinearFourierIRLS>(fourierExamples, targetExamples, randomSeed, metric, numFolds, linearFourierIRLSDiagnostics, linearFourierIRLSOSParams);
+	EXPECT_EQ(GetMD5(linearFourierIRLSRegressor), linearFourierIRLSRegressorMD5);
+	EXPECT_EQ(GetMD5(linearFourierIRLSDiagnostics), linearFourierIRLSDiagnosticsMD5);
+
+	std::vector<T> linearLagrangeIRLSDiagnostics;
+	LinearLagrangeIRLS::OneShotTrainingParams linearLagrangeIRLSOSParams;
+	linearLagrangeIRLSOSParams.MaxNumIterations = 100;
+	linearLagrangeIRLSOSParams.ConvergenceTolerance = 1.e-4;
+	linearLagrangeIRLSOSParams.MaxBasisFunctions = 100;
+	linearLagrangeIRLSOSParams.Lambda = 1.e-3;
+	auto const linearLagrangeIRLSRegressor = Regressors::RegressorTrainer::TrainRegressorOneShot<LinearLagrangeIRLS>(inputExamples, targetExamples, randomSeed, metric, numFolds, linearLagrangeIRLSDiagnostics, linearLagrangeIRLSOSParams);
+	EXPECT_EQ(GetMD5(linearLagrangeIRLSRegressor), linearLagrangeIRLSRegressorMD5);
+	EXPECT_EQ(GetMD5(linearLagrangeIRLSDiagnostics), linearLagrangeIRLSDiagnosticsMD5);
 }
